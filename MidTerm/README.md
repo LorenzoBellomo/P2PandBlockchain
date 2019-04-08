@@ -1,7 +1,7 @@
 # Mid Term
 
 The mid term consists in a study of the Kademlia Distributed Hash Table [1]. The
-rst part of the assignment requires to write a simulation of the construction of
+first part of the assignment requires to write a simulation of the construction of
 the Kademlia routing tables. The simulation takes as input the number m of bits
 of the identiers of the Kademlia network and the number n of nodes that will
 join the network. The routing tables of all the nodes are managed by a centralized
@@ -38,7 +38,7 @@ routing tables in this way: if node A contains B in its routing table, an edge
 from node A to node B will be present in the graph. Then, it is requested
 to perform a study of this graph and show, at least, the average degree of
 the network, its diameter and the clustering coefficient. Report the results of
-dierent simulation performed by varying m (number of bits), n (number of
+different simulation performed by varying m (number of bits), n (number of
 nodes) and k (size of the routing tables).
 To this aim, it is recommended to use a graph analysis tool, such as: Cy-
 toscape tool (http://www.cytoscape.org/), Gephi (https://gephi.org/), Net-
