@@ -10,28 +10,44 @@ import java.net.InetAddress;
  */
 public class Node {
 
+	/* Instance Variables*/
+	
 	private long identifier;
+	@SuppressWarnings("unused")
 	private InetAddress ipAddress;
+	@SuppressWarnings("unused")
 	private int udpPort;
+	
+	/* Constructors */
 
+	/**
+	 * Constructor, It generates a Node element with the loopback address and a fake UDP port
+	 * 
+	 * @param id
+	 */
 	public Node(long id) {
 		ipAddress = InetAddress.getLoopbackAddress();
 		identifier = id;
 		udpPort = 0;
 	}
 
-	public InetAddress getIpAddr() {
-		return ipAddress;
-	}
 
+	/* Getter and setter methods */
+	
+	/**
+	 * Getter method for the Identifier Field
+	 * @return the id of the Node
+	 */
 	public long getId() {
 		return identifier;
 	}
 
-	public int getUDPPort() {
-		return udpPort;
-	}
-
+	/* Generic methods */
+	
+	/**
+	 * Mock ping that simulates an Always on network with no churn
+	 * @return always true
+	 */
 	public boolean ping() {
 		return true;
 	}
