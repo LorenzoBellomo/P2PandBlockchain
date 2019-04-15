@@ -1,9 +1,10 @@
-import java.net.InetAddress;
+import java.math.BigInteger;
 
 /**
  * This class models the Node entity, which is represented by an identifier (m
  * bits long), an IP address and a UDP port on which it is listening for
  * messages.
+ * Strings are used instead of InetAddresses in order to avoid the Unknown host exception
  * 
  * @author Lorenzo Bellomo
  *
@@ -12,21 +13,19 @@ public class Node {
 
 	/* Instance Variables*/
 	
-	private long identifier;
-	@SuppressWarnings("unused")
-	private InetAddress ipAddress;
-	@SuppressWarnings("unused")
+	private BigInteger identifier;
+	private String ipAddress;
 	private int udpPort;
 	
 	/* Constructors */
 
 	/**
-	 * Constructor, It generates a Node element with the loopback address and a fake UDP port
-	 * 
+	 * Constructor
 	 * @param id
+	 * @param address
 	 */
-	public Node(long id) {
-		ipAddress = InetAddress.getLoopbackAddress();
+	public Node(BigInteger id, String address) {
+		ipAddress = address;
 		identifier = id;
 		udpPort = 0;
 	}
@@ -38,7 +37,7 @@ public class Node {
 	 * Getter method for the Identifier Field
 	 * @return the id of the Node
 	 */
-	public long getId() {
+	public BigInteger getId() {
 		return identifier;
 	}
 
@@ -50,6 +49,25 @@ public class Node {
 	 */
 	public boolean ping() {
 		return true;
+	}
+	
+	/**
+	 * Logical equality between elements
+	 * @param n the node to confront with this one
+	 * @return true if they are equals, false otherwise
+	 */
+	public boolean equals(Node n) {
+		return this.identifier == n.getId();
+	}
+
+
+	public String getIpAddress() {
+		return ipAddress;
+	}
+
+
+	public int getUdpPort() {
+		return udpPort;
 	}
 
 }

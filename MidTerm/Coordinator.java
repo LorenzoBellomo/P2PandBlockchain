@@ -1,5 +1,9 @@
 
 import java.util.Map; 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -17,10 +21,13 @@ public class Coordinator {
 	public static final int alpha = 3;
 
 	/* Private Fields */
-	
-	private Map<Long, NodeDescriptor> nodes;
+	private Map<BigInteger, NodeDescriptor> nodes;
 	private Random rand;
-	private long n, m, k, identifierRange;
+	private long n, m, k;
+	
+	/* Statistics fields */
+	private int numberOfCollisions;
+	private long millisElapsed;
 
 	/* Constructors */
 	
@@ -35,7 +42,7 @@ public class Coordinator {
 		this.n = n;
 		this.m = m;
 		this.k = k;
-		identifierRange = (long) (Math.pow(2, m));
+		numberOfCollisions = 0;
 	}
 	
 	/* Methods */
@@ -46,9 +53,8 @@ public class Coordinator {
 	 */
 	public void initialize() {
 		nodes = new HashMap<>((int) n);
-		long newId = (long) (rand.nextDouble() * identifierRange);
-		NodeDescriptor first = new NodeDescriptor(newId, m, k);
-		System.out.println("Generating first id: " + newId);
+		Node node = Utils.generateNewNode(m);
+		NodeDescriptor first = new NodeDescriptor(node, m, k, this);
 		nodes.put(first.getNodeId(), first);
 	}
 	
@@ -58,38 +64,80 @@ public class Coordinator {
 	 * the ones already present in the network and simulates the join for
 	 * given node with given bootstrap. After that, it tells the new node to issue a 
 	 * given number of findNode operations targeting random IDs in order to populate 
-	 * some entries in the routing table (and advertize the new node).
+	 * some entries in the routing table (and advertise the new node).
 	 */
 	public void generateNewNode() {
 		// I generate a random id (different from the previous ones
-		long newId = (long) (rand.nextDouble() * identifierRange);
-		while (nodes.containsKey(newId))
-			newId = (long) (rand.nextDouble() * identifierRange);
-		System.out.println("Joining " + newId);
+
+		Node node = Utils.generateNewNode(m);
+		while (nodes.containsKey(node.getId())) {
+			numberOfCollisions++;
+			node = Utils.generateNewNode(m);
+		}
 		
 		// I find a random bootstrap node starting from the present ones
 		long bootstrapId = (long) (rand.nextDouble() * nodes.size());
 		NodeDescriptor bootstrap = nodes.values().stream().skip(bootstrapId).findFirst().get();
-		System.out.println("bootstrap of " + newId + " is " + bootstrap.getNodeId());
 		
 		// I now join newId with bootstrap given
-		NodeDescriptor newNode = new NodeDescriptor(newId, m, k);
-		nodes.put(newId, newNode);
+		NodeDescriptor newNode = new NodeDescriptor(node, m, k, this);
+		nodes.put(node.getId(), newNode);
 		newNode.joinNetwork(bootstrap);
-		for(int i = 0; i < 1; i++) {
-			long randomId = (long) (rand.nextDouble() * identifierRange);
+		for(int i = 0; i < m; i++) {
+			BigInteger randomId = Utils.generateIDInRightBucket(i, newNode.getNodeId());
 			newNode.startFindNode(randomId, bootstrap);
 		}	
 	}
 	
 	/**
-	 * This method simply makes the coordinator create the whole network
+	 * This method simply makes the coordinator create the whole network, dump the
+	 * network content to a csv file and display some stats about the network
 	 */
 	public void createNetwork() {
+		
+		long startTime = System.currentTimeMillis();
+		
 		initialize();
 		for (int i = 0; i < n - 1; i++)
 			generateNewNode();
+		
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter("networkDump.csv"))) {
+			for(NodeDescriptor n : nodes.values()) {
+				try {
+					n.dumpToFile(writer);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		millisElapsed = System.currentTimeMillis() - startTime;
+		dumpStatistics();
 
 	}
 	
+	/**
+	 * Returns the NodeDescriptor associated the requested id, necessary to make the RPC calls
+	 * @param targetId the id to be returned
+	 * @return the RPC instance
+	 */
+	public NodeDescriptor askRPCInstance(BigInteger targetId) {
+		return nodes.get(targetId);
+	}
+	
+	/**
+	 * This method simply displays the various statistics about the network as 
+	 * collected during its lifetime
+	 */
+	public void dumpStatistics() {
+		System.out.println("number of collisions with the hash function = " + numberOfCollisions);
+		long totEdges = 0;
+		for(NodeDescriptor n : nodes.values())
+			totEdges += n.exposeNumberOfEdges();
+		System.out.println("number of total edges in the network = " + totEdges);
+		System.out.println("if all the routing tables were filled, the number of edges would have been = " + (k*n*m) + " (k*n*m)");
+		System.out.println("Time needed to build the network " + ((double) millisElapsed / 1000) + " seconds");
+	}
 }
