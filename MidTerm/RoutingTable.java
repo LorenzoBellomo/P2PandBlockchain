@@ -6,7 +6,15 @@ import java.util.List;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
+/**
+ * This class models a routing table of m buckets, each one of size k. 
+ * It provides a number of methods for updating it
+ * @author Lorenzo Bellomo
+ *
+ */
 public class RoutingTable {
+	
+	/* Private fields*/
 
 	private long k;
 	private BigInteger nodeId;
@@ -14,6 +22,12 @@ public class RoutingTable {
 	private List<Queue<Node>> routingTable;
 	private long numberOfEdges;
 
+	/**
+	 * Constructor, builds a routing table, built of m buckets of size at most k
+	 * @param m the number of bits of the id
+	 * @param k the number of entries per bucket
+	 * @param nodeId the id creating the routing table
+	 */
 	public RoutingTable(long m, long k, BigInteger nodeId) {
 		this.m = (int) m;
 		this.k = k;
@@ -33,6 +47,8 @@ public class RoutingTable {
 	 * @param node the single node to potentially add to the routing table
 	 */
 	public void tryAddNode(Node node) {
+		
+		//TODO try flipping a coin for adding a new edge or keeping the old one
 
 		Queue<Node> bucket = findBucket(node.getId());
 		if (bucket.contains(node)) {
@@ -106,14 +122,16 @@ public class RoutingTable {
 			int prev = firstBucketIndex;
 			int step = -1;
 			while(bestX.size() < x) {
+				// I find next bucket modulo m
 				int nextBucket = (firstBucketIndex + step) % m;
-				if(nextBucket < 0) 
+				if(nextBucket < 0) // Sometimes modulo returns a negative num.
 					nextBucket += m;
 				if (nextBucket == prev) //It means I didn't find x elem
 					break;
 				prev = nextBucket;
 				bucket = routingTable.get(nextBucket);
 				bestX.addAll(bucket);
+				// This part is the -1, +1, -2, +2... cycle
 				step = -1 * step;
 				if(step < 0)
 					step--;
@@ -144,6 +162,10 @@ public class RoutingTable {
 		return builder.toString();
 	}
 	
+	/** 
+	 * Returns the number of edges in the routing table
+	 * @return the number of outgoing edges in the routing table
+	 */
 	public long getNumberOfEdges() {
 		return numberOfEdges;
 	}

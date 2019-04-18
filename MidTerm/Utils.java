@@ -37,9 +37,13 @@ public class Utils {
 	 * @param id the target id of the query
 	 */
 	public static void updateKClosest(List<Node> kClosest, List<Node> toAdd, BigInteger id, long k) {
-		for(Node n : toAdd) 
+		// I add all the nodes except duplicates
+		for(Node n : toAdd) {
 			if(! kClosest.contains(n))
 				kClosest.add(n);
+		}
+		
+		// I sort the collection and take the best k
 		kClosest = kClosest.stream()
 			.sorted((n1, n2) -> (n1.getId().xor(id).compareTo(n2.getId().xor(id))))
 			.limit(k)
@@ -56,11 +60,18 @@ public class Utils {
 	 */
 	public static Node findClosestNode(List<Node> kClosest, BigInteger id, long m) {
 
-		BigInteger distance = BigInteger.valueOf((long) Math.pow(2, m));
+		// Distance is 2^m at the beginning, so any distance I find later is lesser
+		
+		BigInteger twoToM = BigInteger.valueOf((long) 2);
+		twoToM = twoToM.pow((int) m);
+		
+		BigInteger distance = twoToM;
 		Node closest = null;
 		for (Node n : kClosest) {
+			// I compute the distance, if better then the one before then I update the 
+			// closest known node
 			BigInteger xorDistance = (id.xor(n.getId()));
-			if (xorDistance.compareTo(distance) < 0) {
+			if (xorDistance.compareTo(distance) <= 0) {
 				closest = n;
 				distance = xorDistance;
 			}
@@ -79,12 +90,16 @@ public class Utils {
 	 * @return the list of k not queried nodes
 	 */
 	public static List<Node> findBestNotQueried(List<Node> kClosest, List<Node> queried, BigInteger id, long k) {
+		
+		
 		List<Node> kNotQueried = new ArrayList<>();
 		kClosest.sort((n1, n2) ->  (n1.getId().xor(id).compareTo(n2.getId().xor(id))));
 		Iterator<Node> iter = kClosest.iterator();
 		while (k >= 0 && iter.hasNext()) {
+			// I loop until I find either k elements or the collection is over
 			Node next = iter.next();
 			if (!queried.contains(next)) {
+				// I do not add duplicates
 				kNotQueried.add(next);
 				k--;
 			}
@@ -99,12 +114,12 @@ public class Utils {
 	 * 
 	 * @param kClosest the list of nodes to scan
 	 * @param queried  the list of queried nodes
-	 * @param id       the id to search for
 	 * @return the list of not queried nodes
 	 */
-	public static List<Node> getAllNotQueried(List<Node> kClosest, List<Node> queried, BigInteger id) {
+	public static List<Node> getAllNotQueried(List<Node> kClosest, List<Node> queried) {
+		
+		// This method simply returns all the not queried elements in the kClosest list
 		List<Node> notQueried = new ArrayList<>();
-		kClosest.sort((n1, n2) -> (int)  (n1.getId().xor(id).compareTo(n2.getId().xor(id))));
 		Iterator<Node> iter = kClosest.iterator();
 		while (iter.hasNext()) {
 			Node next = iter.next();
@@ -125,20 +140,15 @@ public class Utils {
 	 */
 	public static BigInteger generateIDInRightBucket(int bucket, BigInteger nodeId) {
 		
-		Random rand = new Random();
+		// What I need to do is keep the prefix identical, swap the bucket level bit and
+		// apply a random mask to the next bits, this way I'm sure that the element
+		// will go in the right bucket
 		BigInteger result = nodeId.shiftRight(bucket);
 		result = result.flipBit(0);
 		result = result.shiftLeft(bucket);
+		
 		// I generate a random delay distributed in [0, 2^bucket)
 		result = result.add(new BigInteger(bucket, rand));
-		
-		/*long skip = (long) (rand.nextDouble() * Math.pow(2, bucket));
-		long prefix = nodeId >> bucket;
-		prefix = prefix ^ 1;
-		prefix = prefix << bucket;*/
-
-		/*long result = prefix + skip;
-		System.out.println(nodeId + " and " + result + " for bucket " + bucket + " prefix " + prefix);*/
 		
 		return result;
 	}
@@ -152,13 +162,15 @@ public class Utils {
 	 */
 	public static Node generateNewNode(long m) {
 		String address = rand.nextInt(256) + "." + rand.nextInt(256) + "." + rand.nextInt(256) + "." + rand.nextInt(256);
+		// Generated a new address, I SHA1 it, and compute the id (as the sha output modulo 2^m)
+		
+		BigInteger twoToM = BigInteger.valueOf((long) 2);
+		twoToM = twoToM.pow((int) m);
+		
 		messageDigest.update(address.getBytes());
 		byte[] output = messageDigest.digest();
 		BigInteger id = new BigInteger(output); 
-		id = (id.mod(BigInteger.valueOf((long) Math.pow(2, m))));
-		assert id.compareTo(BigInteger.ZERO) >= 0;
-		/*if(id.getLowestSetBit() == -1) // the number is 0
-			id.add(BigInteger.valueOf((long) Math.pow(2, m)));*/
+		id = (id.mod(twoToM));
 		
 		return new Node(id, address);
 	}

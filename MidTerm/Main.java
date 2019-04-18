@@ -14,7 +14,7 @@ public class Main {
 		
 		long m = 0, n = 0, k = 0;
 		
-		/*if(args.length == 3) {
+		if(args.length == 3) {
 			m = Integer.parseInt(args[0]);
 			n = Integer.parseInt(args[1]);
 			k = Integer.parseInt(args[2]);
@@ -30,12 +30,9 @@ public class Main {
 				 System.err.println("ERROR: Unrecognized format"); 
 				 System.exit(-1); 
 			}
-		}*/
-		m = 64;
-		n = 500;
-		k = 5;
+		}
 
-		if(m <= 0 || k <= 0 || n < 0)
+		if(m <= 0 || k <= 0 || n <= 0)
 			throw new IllegalArgumentException("parameter out of range");
 
 		Coordinator coordinator = new Coordinator(n, m, k);

@@ -24,6 +24,8 @@ public class NodeDescriptor {
 	private Node node;
 	private RoutingTable routingTable;
 	private Coordinator coordinator;
+	
+	private List<Long> recursiveDepths;
 
 	/* Constructors */
 
@@ -40,6 +42,7 @@ public class NodeDescriptor {
 		this.m = m;
 		this.coordinator = c;
 		routingTable = new RoutingTable(m, k, node.getId());
+		recursiveDepths = new ArrayList<>();
 	}
 
 	/* Methods */
@@ -49,7 +52,7 @@ public class NodeDescriptor {
 	 * 
 	 * @param list the list of potential nodes candidates.
 	 */
-	public void updateRoutingTable(List<Node> list) {
+	private void updateRoutingTable(List<Node> list) {
 		for (Node n : list)
 			updateRoutingTable(n);
 	}
@@ -62,7 +65,7 @@ public class NodeDescriptor {
 	 * 
 	 * @param node the single node to potentially add to the routing table
 	 */
-	public void updateRoutingTable(Node node) {
+	private void updateRoutingTable(Node node) {
 		if (node.getId().compareTo(this.getNodeId()) == 0)
 			return;
 		routingTable.tryAddNode(node);
@@ -76,15 +79,12 @@ public class NodeDescriptor {
 	 * @param bootstrap is the bootstrap node used as anchor
 	 */
 	public void startFindNode(BigInteger id, NodeDescriptor bootstrap) {
-		
-		//TODO remove int i as parameter
 
 		Queue<Node> traveledNodes = new LinkedList<>();
 		traveledNodes.add(this.node);
-		List<Node> result = bootstrap.findNode(id, traveledNodes);
+		//List<Node> result = bootstrap.findNode(id, traveledNodes);
+		List<Node> result = nodeLookup(id);
 		
-		//TODO lookup o find node?
-
 		updateRoutingTable(result);
 	}
 
@@ -143,35 +143,64 @@ public class NodeDescriptor {
 	 * @return the list of best nodes 
 	 */
 	public List<Node> nodeLookup(BigInteger id) {
+		
+		//TODO lookup recursive depth
+		
+		// I initialize the traveled list
 		Queue<Node> traveled = new LinkedList<>();
-		traveled.add(this.node);
-		List<Node> kClosest = routingTable.findBestEntries(Coordinator.alpha, id);
+		long recursiveDepth = 0;
+		
+		// I prepare kClosest (the list of closest known nodes, at most k), 
+		// closestNode (the current closest known node to the targetID, used for
+		// termination), queried (the list of queriedNodes), and notQueried (for 
+		// later use)
+		
+		// find node actually finds the best k elements in my routing table
+		List<Node> kClosest = this.findNode(id, traveled);
 		Node closestNode = Utils.findClosestNode(kClosest, id, m);
 		List<Node> queried = new ArrayList<>();
 		List<Node> notQueried;
 		boolean stop = false;
 		do {
-			stop = true;
+			recursiveDepth++;
+			// This loop is executed until either I queried every element in kClosest, or
+			// I do not update closestNode in one iteration
+			stop = true; 
+			// I find the alpha best not queried nodes
 			notQueried = Utils.findBestNotQueried(kClosest, queried, id, Coordinator.alpha);
-			if(notQueried.size() == 0)
-				break;
-			for(Node n : notQueried) {
-				NodeDescriptor instance = coordinator.askRPCInstance(n.getId());
-				List<Node> result = instance.findNode(id, traveled);
-				queried.add(n);
-				Utils.updateKClosest(kClosest, result, id, k);
-				Node newClosest = Utils.findClosestNode(kClosest, id, m);
-				if(! newClosest.equals(closestNode))
-					stop = false;
-			}		
+			if(notQueried.size() != 0) {
+				// If I enter this if, then I have at least one node to query
+				// else if I don't, stop is true, then I stop
+				
+				for(Node n : notQueried) {
+					// For each node, I issue a find node asking the NodeDescriptor instance
+					// to the coordinator, and I update
+					NodeDescriptor instance = coordinator.askRPCInstance(n.getId());
+					List<Node> result = instance.findNode(id, traveled);
+					
+					queried.add(n);
+					Utils.updateKClosest(kClosest, result, id, k);
+					// At this point I have at most k elements in kClosest (the most promising k)
+					// I now update closestNode
+					Node newClosest = Utils.findClosestNode(kClosest, id, m);
+					if(! newClosest.equals(closestNode)) {
+						closestNode = newClosest;
+						stop = false;
+					}
+				}
+			}
 		} while (!stop);
 		
-		notQueried = Utils.getAllNotQueried(kClosest, queried, id);
+		// At this point I have to query all the not queried nodes
+		notQueried = Utils.getAllNotQueried(kClosest, queried);
 		for(Node n : notQueried) {
+			// I query it and update the kClosest
 			NodeDescriptor instance = coordinator.askRPCInstance(n.getId());
 			List<Node> result = instance.findNode(id, traveled);
 			Utils.updateKClosest(kClosest, result, id, k);
 		}
+		
+		recursiveDepths.add(new Long(recursiveDepth));
 		
 		return kClosest;
 	}
@@ -186,8 +215,28 @@ public class NodeDescriptor {
 		writer.write(routingTable.getCSVDump());
 	}
 	
+	/**
+	 * Returns the number of edges of a node
+	 * @return
+	 */
 	public long exposeNumberOfEdges() {
 		return routingTable.getNumberOfEdges();
 	}
-
+	
+	/**
+	 * This method simply returns the recursive depths gained by the lookup procedure
+	 * @return
+	 */
+	public List<Long> exposeRecursiveDepth() {
+		return this.recursiveDepths;
+	}
+	
+	/**
+	 * This method simply exposes to the Coordinator, for statistics reasons, the bucket index where
+	 * id is supposed to go
+	 * @return the bucket index where id should fall
+	 */
+	public Long exposeBucketIndex(BigInteger id) {
+		return  routingTable.findBucketIndex(id);
+	}
 }

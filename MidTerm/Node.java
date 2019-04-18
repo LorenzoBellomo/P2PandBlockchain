@@ -2,7 +2,7 @@ import java.math.BigInteger;
 
 /**
  * This class models the Node entity, which is represented by an identifier (m
- * bits long), an IP address and a UDP port on which it is listening for
+ * bits BigInteger), an IP address and a UDP port on which it is listening for
  * messages.
  * Strings are used instead of InetAddresses in order to avoid the Unknown host exception
  * 
@@ -52,7 +52,8 @@ public class Node {
 	}
 	
 	/**
-	 * Logical equality between elements
+	 * Logical equality between elements, it just checks for the identifier, assuming
+	 * there are no collisions
 	 * @param n the node to confront with this one
 	 * @return true if they are equals, false otherwise
 	 */
@@ -60,12 +61,18 @@ public class Node {
 		return this.identifier == n.getId();
 	}
 
-
+	/**
+	 * Getter method for the IP Address string
+	 * @return the ip address of the node
+	 */
 	public String getIpAddress() {
 		return ipAddress;
 	}
 
-
+	/**
+	 * Getter method for the UDP port of the node
+	 * @return the UDP port where the node is listening for messages
+	 */
 	public int getUdpPort() {
 		return udpPort;
 	}
