@@ -47,8 +47,6 @@ public class RoutingTable {
 	 * @param node the single node to potentially add to the routing table
 	 */
 	public void tryAddNode(Node node) {
-		
-		//TODO try flipping a coin for adding a new edge or keeping the old one
 
 		Queue<Node> bucket = findBucket(node.getId());
 		if (bucket.contains(node)) {
@@ -78,7 +76,7 @@ public class RoutingTable {
 	 */
 	public long findBucketIndex(BigInteger id) {
 		BigInteger xorDistance = this.nodeId.xor(id);
-		// this means that the number is equal to 0
+		// I have now to check that I don't do log(0)
 		long result = (xorDistance.getLowestSetBit() == -1)? 0 : ((long) (Math.log(xorDistance.doubleValue()) / Math.log(2)));
 		return result;
 
@@ -126,7 +124,7 @@ public class RoutingTable {
 				int nextBucket = (firstBucketIndex + step) % m;
 				if(nextBucket < 0) // Sometimes modulo returns a negative num.
 					nextBucket += m;
-				if (nextBucket == prev) //It means I didn't find x elem
+				if (nextBucket == prev) // It means I didn't find x elem
 					break;
 				prev = nextBucket;
 				bucket = routingTable.get(nextBucket);

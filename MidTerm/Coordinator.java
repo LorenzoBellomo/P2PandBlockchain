@@ -57,6 +57,7 @@ public class Coordinator {
 	private void initialize() {
 		nodes = new HashMap<>((int) n);
 		Node node = Utils.generateNewNode(m);
+		System.out.println("Generating node number 1 out of " + n);
 		NodeDescriptor first = new NodeDescriptor(node, m, k, this);
 		nodes.put(first.getNodeId(), first);
 	}
@@ -71,7 +72,7 @@ public class Coordinator {
 	 * (and advertise the new node).
 	 */
 	private void generateNewNode() {
-		// I generate a random id (different from the previous ones
+		// I generate a random id (different from the previous ones)
 
 		Node node = Utils.generateNewNode(m);
 		while (nodes.containsKey(node.getId())) {
@@ -84,7 +85,7 @@ public class Coordinator {
 		long skip = (long) (rand.nextDouble() * nodes.size());
 		NodeDescriptor bootstrap = nodes.values().stream().skip(skip).findFirst().get();
 		
-		// I now join newId with bootstrap given
+		// I now join newId with given bootstrap
 		NodeDescriptor newNode = new NodeDescriptor(node, m, k, this);
 		nodes.put(node.getId(), newNode);
 		newNode.joinNetwork(bootstrap);
@@ -92,7 +93,7 @@ public class Coordinator {
 			//  I generate, for each i in [0, m), an id fitting k-bucket i
 			BigInteger randomId = Utils.generateIDInRightBucket(i, newNode.getNodeId());
 			// And I tell the new node to look for this random ID
-			newNode.startFindNode(randomId, bootstrap);
+			newNode.startFindNode(randomId);
 		}	
 	}
 	
@@ -151,7 +152,7 @@ public class Coordinator {
 		System.out.println("Number of collisions with the hash function = " + numberOfCollisions);
 		
 		// I now compute both the total number of edges (stored it totEdges), and the recursive 
-		// lookup depth reached. This means the number of times the lookup loop was executted
+		// lookup depth reached. This means the number of times the lookup loop was executed
 		long totEdges = 0;
 		List<Long> recursiveDepths = new ArrayList<>();
 		for(NodeDescriptor n : nodes.values()) {
@@ -172,12 +173,18 @@ public class Coordinator {
 			arr[l.intValue() - 1] = arr[l.intValue() - 1] + 1;
 		
 		System.out.println("Recursive depths reached:");
-		for(int i = 0; i < arr.length; i++)
-			System.out.print((i + 1) + " -> " + arr[i]);
+		for(int i = 0; i < arr.length; i++) 
+			System.out.print((i + 1) + "->" + arr[i] + "  ");
 		System.out.println();
+		
+		// I now compute the average of recursive depth reached
+		double avg = recursiveDepths.stream()
+			.mapToInt(e -> e.intValue())
+			.average()
+			.getAsDouble();
+		System.out.println("Average recursive depth: " + Math.floor(avg * 100) / 100);
 			
 		System.out.println("Time needed to build the network " + ((double) millisElapsed / 1000) + " seconds");
-		System.out.println("Number of total edges in the network = " + totEdges);
 		
 		// What I'm going to do now is estimate the number of edges built in this way. 
 		// I generate 20 identifiers and compute the distance from those nodes and all
@@ -197,6 +204,8 @@ public class Coordinator {
 			distances[i] = (double) distances[i]/20;
 		// At this point in distances[i] I have the expected number of nodes in bucket i
 		
+		// I now estimate the number of edges in a routing table according to the average 
+		// distribution of nodes in all the buckets
 		double betterEstimate = 0;
 		for(int i = 0; i < m; i++) {
 			double ithBucket = distances[i];
@@ -205,13 +214,34 @@ public class Coordinator {
 			else
 				betterEstimate += k;
 		}
+		// I have now an average estimate for one routing table, I need it for n
 		betterEstimate *= n;
 		// At this point in betterEstimate I have a good estimation of the total number of edges
+		
+		// I now compute the theoretical max number of edges in the network (filled routing table)
+		long maxTheoretical = 0;
+		for(int i = 0; i < m; i++) {
+			long pow = (long) Math.pow(2, i);
+			if(Math.pow(2, i) < k)
+				maxTheoretical += pow;	
+			else 
+				maxTheoretical += k;
+		}
+		maxTheoretical *= n;
+		System.out.println("Theoretical maximum number of edges = " + maxTheoretical);
 		System.out.println("Expected number of edges is around " + (long) betterEstimate);
+		System.out.println("Number of total edges in the network = " + totEdges);
+		
+		// I now display, for each bucket, the average number of nodes falling into that bucket
+		// for a generic node 		
 		System.out.println("=========== Distances ===========");
-		/*for(int i = 0; i < distances.length; i++)
-			System.out.print(i + "->" + distances[i] + "; ");
-		System.out.println("=========== End Distances ===========");*/
+		for(int i = 0; i < distances.length; i++) {
+			System.out.print(i + "->" + (long) distances[i] + "   ");
+			if(i % 5 == 0 && i != 0)
+				System.out.println();
+		}
+		System.out.println();
+		System.out.println("=========== End Distances ===========");
 	}
 	
 }

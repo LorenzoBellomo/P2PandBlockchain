@@ -2,9 +2,9 @@ import java.math.BigInteger;
 
 /**
  * This class models the Node entity, which is represented by an identifier (m
- * bits BigInteger), an IP address and a UDP port on which it is listening for
+ * bits long BigInteger), an IP address and a UDP port on which it is listening for
  * messages.
- * Strings are used instead of InetAddresses in order to avoid the Unknown host exception
+ * Strings are used instead of InetAddresses in order to avoid the UnknownHostException
  * 
  * @author Lorenzo Bellomo
  *
@@ -21,8 +21,8 @@ public class Node {
 
 	/**
 	 * Constructor
-	 * @param id
-	 * @param address
+	 * @param id the integer identifier
+	 * @param address the IP address string
 	 */
 	public Node(BigInteger id, String address) {
 		ipAddress = address;

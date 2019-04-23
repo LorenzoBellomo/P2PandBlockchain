@@ -48,7 +48,8 @@ public class NodeDescriptor {
 	/* Methods */
 
 	/**
-	 * It updates the routing table of this node from a list of node
+	 * It updates the routing table of this node from a list of node, by applying
+	 * the algorithm that pings the least recently seen node in case of a full bucket
 	 * 
 	 * @param list the list of potential nodes candidates.
 	 */
@@ -76,13 +77,12 @@ public class NodeDescriptor {
 	 * findNode command with the target id given as parameter
 	 * 
 	 * @param id        the id of the node to be found
-	 * @param bootstrap is the bootstrap node used as anchor
 	 */
-	public void startFindNode(BigInteger id, NodeDescriptor bootstrap) {
+	public void startFindNode(BigInteger id) {
 
 		Queue<Node> traveledNodes = new LinkedList<>();
 		traveledNodes.add(this.node);
-		//List<Node> result = bootstrap.findNode(id, traveledNodes);
+
 		List<Node> result = nodeLookup(id);
 		
 		updateRoutingTable(result);
@@ -143,8 +143,6 @@ public class NodeDescriptor {
 	 * @return the list of best nodes 
 	 */
 	public List<Node> nodeLookup(BigInteger id) {
-		
-		//TODO lookup recursive depth
 		
 		// I initialize the traveled list
 		Queue<Node> traveled = new LinkedList<>();
@@ -217,7 +215,7 @@ public class NodeDescriptor {
 	
 	/**
 	 * Returns the number of edges of a node
-	 * @return
+	 * @return number of edges of this node
 	 */
 	public long exposeNumberOfEdges() {
 		return routingTable.getNumberOfEdges();
@@ -225,7 +223,7 @@ public class NodeDescriptor {
 	
 	/**
 	 * This method simply returns the recursive depths gained by the lookup procedure
-	 * @return
+	 * @return the List containing the reached recursive depths
 	 */
 	public List<Long> exposeRecursiveDepth() {
 		return this.recursiveDepths;
