@@ -57,8 +57,8 @@ public class Coordinator {
 	private void initialize() {
 		nodes = new HashMap<>((int) n);
 		Node node = Utils.generateNewNode(m);
-		System.out.println("Generating node number 1 out of " + n);
-		NodeDescriptor first = new NodeDescriptor(node, m, k, this);
+		System.out.println("Generating node number 1 out of " + n + " with ID " + node.getId());
+		NodeDescriptor first = new NodeDescriptor(node, m, k, this, 1);
 		nodes.put(first.getNodeId(), first);
 	}
 	
@@ -70,8 +70,11 @@ public class Coordinator {
 	 * given number of findNode operations targeting random IDs (one for every k-bucket 
 	 * of his routing table) in order to populate some entries in the routing table 
 	 * (and advertise the new node).
+	 * 
+	 * @param j this index is only for displaying purposes, it is the order in which it has 
+	 * been generated (1 is the first node, 2 the second... up to n)
 	 */
-	private void generateNewNode() {
+	private void generateNewNode(int j) {
 		// I generate a random id (different from the previous ones)
 
 		Node node = Utils.generateNewNode(m);
@@ -80,13 +83,14 @@ public class Coordinator {
 			numberOfCollisions++;
 			node = Utils.generateNewNode(m);
 		}
+		System.out.println("Generating node number " + j + " out of " + n + " with ID " + node.getId());
 		
 		// I find a random bootstrap node starting from the present ones
 		long skip = (long) (rand.nextDouble() * nodes.size());
 		NodeDescriptor bootstrap = nodes.values().stream().skip(skip).findFirst().get();
 		
 		// I now join newId with given bootstrap
-		NodeDescriptor newNode = new NodeDescriptor(node, m, k, this);
+		NodeDescriptor newNode = new NodeDescriptor(node, m, k, this, j);
 		nodes.put(node.getId(), newNode);
 		newNode.joinNetwork(bootstrap);
 		for(int i = 0; i < m; i++) {
@@ -107,10 +111,9 @@ public class Coordinator {
 		long startTime = System.currentTimeMillis();
 		
 		initialize(); // This generates one node
-		for (int i = 0; i < n - 1; i++) {
-			System.out.println("Generating node number " + (i+2) + " out of " + n);
-			generateNewNode();
-		}
+		for (int i = 0; i < n - 1; i++) 
+			generateNewNode(i + 2);
+		
 		// I have generated the total number of n nodes
 		
 		// I now have to dump the network content in the csv file		
@@ -194,7 +197,7 @@ public class Coordinator {
 			distances[i] = 0;
 		for(int i = 0; i < 20; i++) {
 			Node n = Utils.generateNewNode(m);
-			NodeDescriptor newND = new NodeDescriptor(n, m, k, this);
+			NodeDescriptor newND = new NodeDescriptor(n, m, k, this, -1);
 			for(NodeDescriptor nd : nodes.values()) {
 				long index = newND.exposeBucketIndex(nd.getNodeId());
 				distances[(int) index] +=1;
@@ -242,6 +245,26 @@ public class Coordinator {
 		}
 		System.out.println();
 		System.out.println("=========== End Distances ===========");
+		
+		// I now compute the in degree for each node
+		Map<BigInteger, Long> m = new HashMap<>();
+		for(BigInteger id : nodes.keySet()) 
+			m.put(id, (long) 0);
+		for(NodeDescriptor n : nodes.values()) {
+			n.addInDegrees(m);
+		}
+		
+		System.out.println("Now printing 10 lowest in-degrees");
+		m.keySet().stream()
+			.sorted((k1, k2) -> m.get(k1).compareTo(m.get(k2)))
+			.limit(10)
+			.forEach(k -> System.out.println("ID: " + k + " generated " + nodes.get(k).getGenerationOrder() + "th and has inDegree " + m.get(k)));
+		
+		System.out.println("Now printing 10 highest in-degrees");
+		m.keySet().stream()
+			.sorted((k1, k2) -> -m.get(k1).compareTo(m.get(k2)))
+			.limit(10)
+			.forEach(k -> System.out.println("ID: " + k + " generated " + nodes.get(k).getGenerationOrder() + "th and has inDegree " + m.get(k)));
 	}
 	
 }

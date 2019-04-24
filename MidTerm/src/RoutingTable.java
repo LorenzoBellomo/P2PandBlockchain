@@ -3,6 +3,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
@@ -166,6 +167,17 @@ public class RoutingTable {
 	 */
 	public long getNumberOfEdges() {
 		return numberOfEdges;
+	}
+	
+	/**
+	 * This method adds to the inDegree map 1 if I have an outgoing edge towards it, 
+	 * or 0 if I don't
+	 * @param map the inDegree map
+	 */
+	public void addInDegrees(Map<BigInteger, Long> map) {
+		routingTable.stream()
+			.flatMap(e -> e.stream())
+			.forEach(e -> map.put(e.getId(), map.get(e.getId()) + 1));
 	}
 
 }

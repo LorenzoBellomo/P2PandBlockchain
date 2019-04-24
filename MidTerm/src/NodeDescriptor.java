@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.util.ArrayList; 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -26,6 +27,7 @@ public class NodeDescriptor {
 	private Coordinator coordinator;
 	
 	private List<Long> recursiveDepths;
+	private long orderOfGeneration;
 
 	/* Constructors */
 
@@ -35,14 +37,16 @@ public class NodeDescriptor {
 	 * @param node the new node
 	 * @param m  the number of bits of the identifiers
 	 * @param k  the number of entries per bucket in the routing tables
+	 * @param orderOfGeneration the number of this id, ordered by generation time
 	 */
-	public NodeDescriptor(Node node, long m, long k, Coordinator c) {
+	public NodeDescriptor(Node node, long m, long k, Coordinator c, long orderOfGeneration) {
 		this.node = node;
 		this.k = k;
 		this.m = m;
 		this.coordinator = c;
 		routingTable = new RoutingTable(m, k, node.getId());
 		recursiveDepths = new ArrayList<>();
+		this.orderOfGeneration = orderOfGeneration;
 	}
 
 	/* Methods */
@@ -235,6 +239,24 @@ public class NodeDescriptor {
 	 * @return the bucket index where id should fall
 	 */
 	public Long exposeBucketIndex(BigInteger id) {
-		return  routingTable.findBucketIndex(id);
+		return routingTable.findBucketIndex(id);
 	}
+	
+	/**
+	 * This method is a getter for the generation order of the node
+	 * @return the generation order
+	 */
+	public long getGenerationOrder() {
+		return orderOfGeneration;
+	}
+	
+	
+	/**
+	 * This method adds the inDegrees to the key for each edge it has
+	 * @param map the map of inDegrees
+	 */
+	public void addInDegrees(Map<BigInteger, Long> map) {
+		routingTable.addInDegrees(map);
+	}
+	
 }
