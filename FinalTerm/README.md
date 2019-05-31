@@ -1,8 +1,5 @@
-# Peer to Peer Systems and Blockchains
-## Academic Year 2018/2019
-## Final Term
-# Smart Auctions: Dutch, English and Vickery Auctions on the Ethereum blockchain
-##  Deadline 17-06-2019
+# Final Term: Smart Auctions: Dutch, English and Vickery Auctions on the Ethereum blockchain
+
 ### 1 Overview
 The project requires to implement two types of auction systems using Ethereum.
 One is Vickery and the other one should be chosen between the Dutch and the
@@ -10,8 +7,8 @@ English auction. All these type of auctions are described in the following. A co
 feature of all the auctions is the "grace period", corresponding to the period when
 the auction exists, but is not yet active. This period is measured as the number of
 blocks corresponding to around 5 min.
-### 2 Smart Auctions
-#### 2.1 Dutch Auction
+## 2 Smart Auctions
+### 2.1 Dutch Auction
 price descends until some bidder is willing to pay it
 A Dutch auction, also called open-bid descending-price auction or clock auction, is a
 type of auction in which the price of the good is initially set to a very high value and
@@ -41,7 +38,7 @@ number and applying the specied rate of decline in price to the original price.
 rst bid which sends a quantity greater than or equal to the current price is the
 winner; the money should be immediately transferred to the seller and the auction
 contract terminated. Invalid bids should be refunded immediately.
-#### 2.2 English Auction with temporary buyout
+### 2.2 English Auction with temporary buyout
 new bids increase the price until no new bid has been posted for a xed
 number of blocks. The good may be bought before the auction starts
 An open-bid ascending-price auction, also called an English auction, is the classic
@@ -67,11 +64,11 @@ Once created, the contract should accept bids from anybody with a value greater
 than or equal to the current winning bid plus the minimum bid increment. The
 initial bid must be the reserve price or higher. When a successful bid is placed, the
 money should be held by the contract and the value of the previous bid returned
-to the previous bidder. At the end, when a sucient number of blocks passes with
+to the previous bidder. At the end, when a sufficient number of blocks passes with
 no new bids, the auction should stop accepting new bids and wait for the nalize()
 function which may be called by the buyer or by the seller to perform the movement
 of money.
-#### 2.3 Vickery Auction with withdrawal
+### 2.3 Vickery Auction with withdrawal
 Bidders submit sealed bid commitments and later reveal them. Highest
 revealed bid wins but pays only the price of the second highest revealed
 bid. Bidders who don't reveal forfeit a deposit.Bidder can withdrow
@@ -135,7 +132,7 @@ reveal their bids. The contract may be left with surplus funds at the end due to
 the deposit bids associated to unopened bids or uncorrect fund transfer. You may
 burn this money, or send it to a designated charity address, but not to the winning
 bidder: otherwise, they can use it to bribe other bidders not to open their bids.
-### 3 Requirements
+## 3 Requirements
 The student must:
 - write the smart contracts in Solidity, and compile/deploy them on Remix [1].
 Security issues should be taken into account when considering the interactions
@@ -161,5 +158,5 @@ Submit the assignment through Moodle and bring a paper copy of the relation and 
 the code at the reception of the Depratment of Computer Science. The evaluation of
 the assignment will be notied through Moodle. Post doubts/clarication requests
 on the Moodle page of the course.
-### References
+## References
 [1] Remix - Solidity IDE https://remix.ethereum.org/.
