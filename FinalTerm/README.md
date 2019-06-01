@@ -1,6 +1,6 @@
 # Final Term: Smart Auctions: Dutch, English and Vickery Auctions on the Ethereum blockchain
 
-### 1 Overview
+## 1 Overview
 The project requires to implement two types of auction systems using Ethereum.
 One is Vickery and the other one should be chosen between the Dutch and the
 English auction. All these type of auctions are described in the following. A common
