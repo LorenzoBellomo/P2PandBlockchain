@@ -1,9 +1,9 @@
 pragma solidity ^0.5.0;
 
-import "./DecreaseLogic.sol";
+import "./decreaseLogic.sol";
 
 contract DutchAuction {
-    address payable public owner;
+
     address payable public winner;
     bool public ended;
     uint public reservePrice;
@@ -12,6 +12,10 @@ contract DutchAuction {
     uint public activationTime;
     DecreaseLogic public decreaseLogic;
     MetaInfo public contractInfo;
+
+    // TODO meta info, change time to blocks
+    // handle refunds
+    // events
 
     struct MetaInfo {
         uint id;
@@ -24,8 +28,8 @@ contract DutchAuction {
                 uint _startPrice,
                 uint _reservePrice,
                 uint _duration,
-                DecreaseLogic _decreaseLogic,
-                address payable _owner) public {
+                DecreaseLogic _decreaseLogic
+            ) public {
         assert (_startPrice > _reservePrice);
 
         startPrice = _startPrice;
@@ -34,7 +38,6 @@ contract DutchAuction {
         decreaseLogic = _decreaseLogic;
         activationTime = now;
         ended = false;
-        owner = _owner;
     }
 
     function bid() external payable returns (bool) {
@@ -54,8 +57,6 @@ contract DutchAuction {
         ended = true;
         winner = msg.sender;
         emit AuctionEnded(winner, currentPrice);
-        // pay owner
-        owner.transfer(currentPrice);
         if(msg.value > currentPrice)
             msg.sender.transfer(msg.value - currentPrice);
     }
