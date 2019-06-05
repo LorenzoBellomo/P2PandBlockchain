@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 
 contract VickreyAuction {
 
+    address payable public owner;
     uint public reservePrice;
     uint public commitmentDuration;
     uint public withdrawalDuration;
@@ -25,6 +26,7 @@ contract VickreyAuction {
         depositRequirement = _depositRequirement;
         activationTime = now;
         ended = false;
+        owner = msg.sender;
     }
 
 }
