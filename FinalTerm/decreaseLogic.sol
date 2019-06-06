@@ -1,15 +1,19 @@
 pragma solidity ^0.5.0;
 
 interface DecreaseLogic {
+
     function computeCurrentPrice
         (uint startTime,
         uint duration,
         uint startPrice,
         uint nowT,
         uint reservePrice) external pure returns (uint);
+
+    function description() external pure returns (string memory);
 }
 
 contract LinearDecreaseLogic is DecreaseLogic {
+
     function computeCurrentPrice
         (uint startTime,
         uint duration,
@@ -20,6 +24,10 @@ contract LinearDecreaseLogic is DecreaseLogic {
         uint ppm = ((nowT - startTime) * 1000000) / duration;
         uint currentPrice = startPrice - ((ppm * (startPrice - reservePrice)) / 1000000);
         return currentPrice;
+    }
+
+    function description() external pure returns (string memory) {
+        return "Linear";
     }
 }
 
@@ -65,5 +73,9 @@ contract ExponentialDecreaseLogic is DecreaseLogic {
             y := div(mload(add(m,sub(255,a))), shift)
             y := add(y, mul(256, gt(arg, 0x8000000000000000000000000000000000000000000000000000000000000000)))
         }
+    }
+
+    function description() external pure returns (string memory) {
+        return "Exponential";
     }
 }

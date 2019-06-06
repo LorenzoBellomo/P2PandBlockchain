@@ -4,24 +4,18 @@ import "./decreaseLogic.sol";
 
 contract DutchAuction {
 
-    address payable public owner;
-    address payable public winner;
-    bool public ended;
-    uint public reservePrice;
-    uint public startPrice;
-    uint public duration;
-    uint public activationTime;
-    DecreaseLogic public decreaseLogic;
-    MetaInfo public contractInfo;
+    address payable private owner;
+    address payable private winner;
+    bool private ended;
+    uint private reservePrice;
+    uint private startPrice;
+    uint private duration;
+    uint private activationTime;
+    DecreaseLogic private decreaseLogic;
     uint constant graceTime = 2;
 
-    // TODO meta info
     // handle refunds
-
-    struct MetaInfo {
-        uint id;
-        string name;
-    }
+    // TODO remember grace time on both contracts
 
     event AuctionEnded(address winner, uint amount);
 
@@ -73,4 +67,41 @@ contract DutchAuction {
         toRefund = 0;
         msg.sender.transfer(toRef);
     }*/
+
+    /* ------------- Getters from now on ------------- */
+
+    function getReservePrice() external view returns (uint) {
+        return reservePrice;
+    }
+
+    function getStartPrice() external view returns (uint) {
+        return startPrice;
+    }
+
+    function getCurrentPrice() external view returns (uint) {
+        uint currentPrice = decreaseLogic.
+            computeCurrentPrice(activationTime + graceTime, duration, startPrice, block.number, reservePrice);
+        return currentPrice;
+    }
+
+    function getWinner() external view returns (address) {
+        require(!ended, "No winner yet, the auction has not ended");
+        return winner;
+    }
+
+    function getOwner() external view returns (address) {
+        return owner;
+    }
+
+    function getDuration() external view returns (uint) {
+        return duration;
+    }
+
+    function isEnded() external view returns (bool) {
+        return ended;
+    }
+
+    function getDecreaseLogicDescription() external view returns (string memory) {
+        return decreaseLogic.description();
+    }
 }
