@@ -32,6 +32,9 @@ contract LinearDecreaseLogic is DecreaseLogic {
 }
 
 contract ExponentialDecreaseLogic is DecreaseLogic {
+
+    uint constant logOneBillion = 30;
+
     function computeCurrentPrice
         (uint startTime,
         uint duration,
@@ -39,12 +42,14 @@ contract ExponentialDecreaseLogic is DecreaseLogic {
         uint nowT,
         uint reservePrice) external pure returns (uint)
     {
-        uint ppm = ((nowT - startTime) * 1000000) / duration;
-        uint currentPrice = startPrice - ((ppm * (startPrice - reservePrice)) / 1000000);
+        uint ppb = (((nowT - startTime) * 1073741824) / duration);
+        uint a = (1000*log2(ppb))/logOneBillion;
+        uint currentPrice = startPrice - ((a*(startPrice-reservePrice)) / 1000);
         return currentPrice;
     }
 
     function log2(uint x) private pure returns (uint y){
+        // Cost is fixed and is 757 wei
         assembly {
             let arg := x
             x := sub(x,1)
