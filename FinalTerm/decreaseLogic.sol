@@ -1,5 +1,11 @@
 pragma solidity ^0.5.0;
 
+// @author: Lorenzo Bellomo
+
+/*
+ * This file contains both the interface and the sample decrease logics
+ * implemented to test the Dutch Auction
+ */
 interface DecreaseLogic {
 
     function computeCurrentPrice
@@ -9,10 +15,14 @@ interface DecreaseLogic {
         uint nowT,
         uint reservePrice) external pure returns (uint);
 
+    // Description is like a toString of the decrease logic
     function description() external pure returns (string memory);
 }
 
 contract LinearDecreaseLogic is DecreaseLogic {
+
+    // The precision of the position on the x axis (time) is increased by multiplying
+    // by working in part per millions, instead of percentages
 
     function computeCurrentPrice
         (uint startTime,
@@ -33,7 +43,13 @@ contract LinearDecreaseLogic is DecreaseLogic {
 
 contract ExponentialDecreaseLogic is DecreaseLogic {
 
+    // This is the logarithm (hard coded) of the closest power of two to 1 billion
     uint constant logOneBillion = 30;
+    // and this is the closest power of 2
+    uint constant power = 1073741824;
+
+    // In order to increase the precision the logarithm is confronted
+    // with the closest power of 2 with respect to 1 billion
 
     function computeCurrentPrice
         (uint startTime,
@@ -48,6 +64,10 @@ contract ExponentialDecreaseLogic is DecreaseLogic {
         return currentPrice;
     }
 
+    /*
+     * This is a log in base 2 implementation that I copied from a forum online, its cost
+     * is fixed and is around 757 wei (I suppose it might depend from the compiler chosen)
+     */
     function log2(uint x) private pure returns (uint y){
         // Cost is fixed and is 757 wei
         assembly {

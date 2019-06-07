@@ -1,22 +1,31 @@
 pragma solidity ^0.5.0;
 
+// @author: Lorenzo Bellomo
+
 import "./decreaseLogic.sol";
 
+// The main methods of the class are at the beginning, while at the end
+// are all the getters
 contract DutchAuction {
+
+    // The grace time is constant and should be 20 to guarantee around 5
+    // minutes of grace time (considering 15 seconds mining time avg)
+    // It might be set lower in order to speed up the testing process
+    uint constant graceTime = 2;
 
     address payable private owner;
     address payable private winner;
+    // ended becomes true when the auction ends
     bool private ended;
+    // prices
     uint private reservePrice;
     uint private startPrice;
+    // timing variables, expressed via number of blocks
     uint private duration;
     uint private activationTime;
     DecreaseLogic private decreaseLogic;
-    uint constant graceTime = 2;
 
-    // handle refunds
-    // TODO remember grace time on both contracts
-
+    // This event gets fired whenever an auction ends
     event AuctionEnded(address winner, uint amount);
 
     constructor(
@@ -36,37 +45,39 @@ contract DutchAuction {
         owner = msg.sender;
     }
 
+    /*
+     * This is the main method of the contract. It first checks if the time range is correct
+     * for making bids, and in case it is it simply ends the auction and emits the end event.
+     * The check on the phase is made in a lazy way, so the event might not fire in the right
+     * moment, but the timing check is always correct.
+     */
     function bid() external payable returns (bool) {
         require(!ended, "Sorry, the auction has ended");
         uint nowT = block.number;
-        // Considering avg mining time of 15 seconds per block
         require(nowT - activationTime >= graceTime, "Wait until the grace time is over");
         if(nowT - activationTime > duration + graceTime) {
             // The auction has ended, but no one made a bid in time
             winner = address(0);
             ended = true;
             emit AuctionEnded(winner, 0);
+            // I refund the bidder account and return false to signal that
+            // the transaction failed
             msg.sender.transfer(msg.value);
             return false;
         }
+        // In this case I am in the right time span to make bids
         uint currentPrice = decreaseLogic.
                         computeCurrentPrice(activationTime + graceTime, duration, startPrice, nowT, reservePrice);
+        // I have computed the current price, but I have to check that enough ether was passed
         require(msg.value >= currentPrice, "Sorry, current price is higher");
+        // At this point I'm sure that I had enough money to end the auction
         ended = true;
         winner = msg.sender;
         emit AuctionEnded(winner, currentPrice);
         owner.transfer(currentPrice);
-        if(msg.value > currentPrice)
+        if(msg.value > currentPrice) // I refund the extra wei that the account gave me
             msg.sender.transfer(msg.value - currentPrice);
     }
-
-    /*function claimDifference() external {
-        require(winner == msg.sender, "Only the winner can redeem the difference");
-        require(toRefund > 0, "Nothing to refund, sorry!");
-        uint toRef = toRefund;
-        toRefund = 0;
-        msg.sender.transfer(toRef);
-    }*/
 
     /* ------------- Getters from now on ------------- */
 
