@@ -96,7 +96,10 @@ contract VickreyAuction {
 
         // At this point the commitment is successful, I record everything
         commitmentCount++;
-        commitments[msg.sender] = Commitment(hash, BidStatus.COMMITED, msg.value - depositRequirement);
+        // I save that I might have to refund msg.value, This is the deposit plus
+        // the extra ether that he gave me. If he withdraws I will handle this
+        // case accordingly
+        commitments[msg.sender] = Commitment(hash, BidStatus.COMMITED, msg.value);
         possibleRefunds.push(msg.sender);
 
         // And I emit an event for the new commitment
@@ -118,7 +121,8 @@ contract VickreyAuction {
         // I found the commitment, I record that it was withdrawn and I record that I have
         // to send back half the deposit
         commitments[msg.sender].status = BidStatus.WITHDRAWN;
-        commitments[msg.sender].pendingRefund += depositRequirement / 2;
+        // In pending refund I have a whole deposit, I have to cut half of it
+        commitments[msg.sender].pendingRefund -= depositRequirement / 2;
         commitmentCount--;
 
         // Now I emit the event signaling the withdrawal
@@ -143,7 +147,7 @@ contract VickreyAuction {
         // At this point the commitment was valid, I have to see if this might be a winner
 
         if(msg.value > topPayment) {
-            // Than it is the current winner
+            // Then it is the current winner
             winner = msg.sender;
             winningPrice = topPayment;
             topPayment = msg.value;
@@ -160,39 +164,65 @@ contract VickreyAuction {
             msg.sender.transfer(commitments[msg.sender].pendingRefund + msg.value);
             commitments[msg.sender].pendingRefund = 0;
             commitments[msg.sender].status = BidStatus.PAID;
-            // false means I was refunded and cannot win
+            // false means the bidder was refunded and cannot win
             return false;
         }
 
     }
 
     function finalize() external {
-        // TODO fix refunds of initial fund, and comment
+
         require(msg.sender == owner, "Only the owner can finalize an auction");
         changeAuctionPhase(block.number);
         require(auctionStatus == AuctionStatus.ENDED, "Sorry, too early to call finalize");
+        // At this point I'm sure that I can finalize
         auctionStatus = AuctionStatus.FINALIZED;
         for(uint i = 0; i < possibleRefunds.length; i++) {
+            // for each participant I check his commitment, and see if
+            // he needs to be refunded
             Commitment memory comm = commitments[possibleRefunds[i]];
             if(comm.status != BidStatus.PAID) {
+                // Paid means that I have already refunded this account
+                // I record that I will not refund this account
+                commitments[possibleRefunds[i]].status = BidStatus.PAID;
                 if(possibleRefunds[i] == winner) {
+                    // If he is the winner, I have to remove from the pending
+                    // refund the winning amount, but I can give him back
+                    // the whole deposit and the extra
                     winner.transfer(comm.pendingRefund - winningPrice);
-                    commitments[winner].pendingRefund = 0;
-                    commitments[winner].status = BidStatus.PAID;
                 } else {
+                    // Not a winner, so I can transfer the whole amount of money
                     possibleRefunds[i].transfer(comm.pendingRefund);
-                    commitments[possibleRefunds[i]].pendingRefund = 0;
-                    commitments[possibleRefunds[i]].status = BidStatus.PAID;
                 }
+                commitments[possibleRefunds[i]].pendingRefund = 0;
             }
         }
     }
 
+    /*
+     * This is the main method used to switch from a phase to another.
+     * It is invoked in two ways:
+     * - Every time one of the main methods is called (bid, withdraw, open)
+     * - At any time by the auction owner through the method updateCurrentPhase below
+     * It takes as parameter the current block number and computes which phase is
+     * currently ongoing. It emits one event for each phase that is passed until now
+     * and that was not emitted before because of the lazy evaluation.
+     * This means that functions are guaranteed to respect the contract with respect to
+     * time, but events may fire late
+     * This is not a view Function since it writes the auctionStatus variable
+     */
     function changeAuctionPhase(uint nowT) private {
 
+        // I call this function only if the status is not ENDED or FINALIZED
+        require(auctionStatus < AuctionStatus.ENDED, "The auction is over, sorry");
+
         uint timeDiff = nowT - activationTime;
+        // I use the integer below the enum to compute the number of phases passed
+        // The association is done starting by 0 (GRACE = 0, COMMITMENT = 1...)
         uint prev = uint(auctionStatus);
 
+        // Below is just a way to compute in which phase I am now, I store the current
+        // phase int he auctionStatus variable on the blockchain
         if(timeDiff < graceTime) {
             auctionStatus = AuctionStatus.GRACE;
         } else if(timeDiff < commitmentDuration + graceTime) {
@@ -205,9 +235,12 @@ contract VickreyAuction {
             auctionStatus = AuctionStatus.ENDED;
         }
 
+        // diff will be the number of phases passed
         uint diff = uint(auctionStatus) - prev;
 
         while(diff > 0) {
+            // I have to emit an event for each phase that is passed
+            // So I match the previous event and I emit its relative event
             if(prev == uint(AuctionStatus.GRACE))
                 emit GraceTimeOver(reservePrice, depositRequirement, commitmentDuration);
             else if(prev == uint(AuctionStatus.COMMITMENT))
@@ -217,13 +250,19 @@ contract VickreyAuction {
             else if(prev == uint(AuctionStatus.OPENING))
                 emit AuctionEnded(winner, winningPrice);
             else
-                diff = 1;
+                break;
+            // I have emitted the event, now I need to check if I have to emit
+            // the next one
             prev++;
             diff--;
         }
 
     }
 
+    /*
+     * This method simply calls the function that checks if it has to change the auction time
+     * and it can only be called by the auction owner
+     */
     function updateCurrentPhase() external {
         require(msg.sender == owner, "This function is restricted to the auction owner");
         changeAuctionPhase(block.number);

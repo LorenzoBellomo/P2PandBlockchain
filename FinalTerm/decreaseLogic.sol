@@ -66,7 +66,8 @@ contract ExponentialDecreaseLogic is DecreaseLogic {
 
     /*
      * This is a log in base 2 implementation that I copied from a forum online, its cost
-     * is fixed and is around 757 wei (I suppose it might depend from the compiler chosen)
+     * is fixed and is around 757 wei (I suppose it might depend from the compiler chosen).
+     * It ceils to the closest integer
      */
     function log2(uint x) private pure returns (uint y){
         // Cost is fixed and is 757 wei
