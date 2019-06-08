@@ -43,6 +43,7 @@ contract DutchAuction {
         activationTime = block.number;
         ended = false;
         owner = msg.sender;
+        winner = address(0);
     }
 
     /*
@@ -57,7 +58,6 @@ contract DutchAuction {
         require(nowT - activationTime >= graceTime, "Wait until the grace time is over");
         if(nowT - activationTime > duration + graceTime) {
             // The auction has ended, but no one made a bid in time
-            winner = address(0);
             ended = true;
             emit AuctionEnded(winner, 0);
             // I refund the bidder account and return false to signal that
@@ -77,6 +77,25 @@ contract DutchAuction {
         owner.transfer(currentPrice);
         if(msg.value > currentPrice) // I refund the extra wei that the account gave me
             msg.sender.transfer(msg.value - currentPrice);
+    }
+
+    /*
+     * This method simply checks if the auction is over and it can only be
+     * called by the auction owner
+     */
+    function checkIfAuctionEnded() external returns (bool) {
+        require(msg.sender == owner, "Sorry, only the owner has access to this method");
+
+        if(ended) return true;
+
+        uint nowT = block.number;
+        if(nowT - activationTime > duration + graceTime) {
+            // The auction has ended, so no one won
+            ended = true;
+            emit AuctionEnded(winner, 0);
+            return true;
+        }
+        return false;
     }
 
     /* ------------- Getters from now on ------------- */
