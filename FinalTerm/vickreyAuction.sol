@@ -194,6 +194,8 @@ contract VickreyAuction {
                 }
                 commitments[possibleRefunds[i]].pendingRefund = 0;
             }
+            // I pay the owner the amount
+            owner.transfer(winningPrice);
         }
     }
 
