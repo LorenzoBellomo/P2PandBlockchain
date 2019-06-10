@@ -73,8 +73,31 @@
 	\end{itemize}
 	The $\ceil{\log_2x}$ function, used in order to implement both the logarithmic and the exponential decrease logic, was copied from a forum online. It uses inline assembly code and has a fixed cost of 757 \emph{wei}.
 	
-	\paragraph*{Testing}
+	\subsection*{Testing}
+	In this section the \emph{Remix} deployment and the \emph{gas evaluation} will be addressed for the Dutch Auction. The evaluation will be done with the JavaScript VM.
 	
+		\paragraph*{Test Setup}: In order to test the Dutch Auction, the subsequent actions will be performed:
+		\begin{enumerate}
+			\item \emph{Activate compiler and deployer}: If on the new \emph{Remix} environment, the two components to activate are the \emph{Solidity compiler} and the \emph{Deploy and Run Transaction} components.
+			\item \emph{Compile dutchAuction.sol}: This will also compile the file \emph{decreaseLogic.sol} because of the direct dependency. As a note, the compiler outputs warnings for the $\ceil{\log_2x}$ implementation provided in the file \emph{decreaseLogic.sol}, but they can be overlooked. The compiler version used in this examples is 0.5.1+commit.c8a2cb62 with enabled optimizations.
+			\item \emph{Deploy a decrease logic}: In order to instantiate the auction contract, a decrease logic will be needed. The data following this section will be provided using a \emph{linear decrease logic} contract.
+			\item \emph{Deploy the Dutch Auction}: At this point the contract can be deployed (passing as parameter, where the decrease logic is expected, the address of the previously deployed linear logic). For example, it is possible to use 1000 as start price, 100 as reserve price and 10 as duration.
+			\item \emph{Make the grace period expire}: The grace period duration has been lowered to 2 blocks in order to ease testing. It is useful to consider the fact that remix virtually mines a block for each transaction. The first grace period block is burnt the moment the auction is created, so it is only necessary to call once one of the main methods (\emph{bid()} or \emph{checkIfAuctionEnded()}) in order to effectively end the grace period. As a note, calling any of the getters (view methods), do not burn a block number, so it is possible to always check the contract status.
+			\item \emph{Try some losing bids}: Now is the time to try some failing bids, before making the winning one, with any account. At this point any non view method call burns a block (and decreases the current price by 100 in the example).
+			\item \emph{Win the auction}: At this point, one can either make an account win the auction, or let it end with no winner.  
+		\end{enumerate}
+	
+		\paragraph*{Gas Evaluation}
+		The cost of the various points have been computed as: 
+		\begin{itemize}
+			\item The cost of deploying the two contracts (Decrease Logic and Dutch Auction) are respectively 88\,735 and 650\,446 wei. 
+			\item The cost of skipping the grace period is 830 wei and will be neglected.
+			\item The cost of every losing bid is 4687 and it is fixed (since they all fail at the same instruction). 
+			\item The cost paid by the winner is fixed and it is 41\,619 wei. If instead the auction ends without a winner (the duration expires), then the cost is around 23\,651 wei.
+		\end{itemize}
+		Taking those values, then the final cost can be approximated as: $$totalCost \approx 88\,735 + 650\,446 + (4\,687 * \#losingBids) + lastEventCost $$
+		Neglecting the losing bids, the auction owner pays around 740\,000 wei, while the winner pays around 40\,000 wei.
+			
 
 \section*{Vickrey Auction}
 \label{sec:vickreyAuction}
@@ -85,7 +108,7 @@
 		\item \emph{bid(hash)}: This function takes a commitment as parameter and tries to submit it if all the parameters are respected (correct time range for making bids, paid deposit\dots).
 		\item \emph{withdraw()}: This function, if all the parameters are respected, undoes the commitment of the function caller.  
 		\item \emph{open(nonce)}: This function is both used to open the envelopes of the bids, and to refund losers immediately (before the owner calls finalize). The case of a non valid commitment (which means that the commitment hash and the hash computed with the received nonce do not coincide), is handled as a non valid bid, which means that the deposit fund is not refunded. This is the same treatment of an opening which reveals that the original payment was below the reserve price threshold.
-		\item \emph{finalize}: This function can only be called by the owner of the auction, and only when the auction state is \emph{ENDED}. This method simply refunds all the not yet refunded accounts.
+		\item \emph{finalize()}: This function can only be called by the owner of the auction, and only when the auction state is \emph{ENDED}. This method simply refunds all the not yet refunded accounts.
 		\item \emph{changeAuctionTime()}: This method simply calls the modifier specified to change the auction phase.
 	\end{itemize}
 
@@ -96,7 +119,8 @@
 		\item \emph{Informative}: Those events (\emph{NewCommitment} and \emph{NewWithdrawal}) are emitted every time a new valid commitment is made or withdrawn.
 	\end{itemize}
 	
-	\paragraph*{Testing}
+	\subsection*{Testing}
+	In this section the \emph{Remix} deployment and the \emph{gas evaluation} will be addressed for the Vickrey Auction. \\ 
 
 	
 	

@@ -79,6 +79,7 @@ contract DutchAuction {
         owner.transfer(currentPrice);
         if(msg.value > currentPrice) // I refund the extra wei that the account gave me
             msg.sender.transfer(msg.value - currentPrice);
+        return true;
     }
 
     /*
@@ -111,6 +112,8 @@ contract DutchAuction {
     }
 
     function getCurrentPrice() external view returns (uint) {
+        require(block.number - activationTime >= graceTime && block.number - activationTime < duration + graceTime,
+                "Sorry, not yet in the auction main phase");
         uint currentPrice = decreaseLogic.
             computeCurrentPrice(activationTime + graceTime, duration, startPrice, block.number, reservePrice);
         return currentPrice;
