@@ -54,8 +54,8 @@ contract VickreyAuction {
 
     // the events below are the ones related to phase switch
     event GraceTimeOver(uint reservePrice, uint depositRequirement, uint commitmentDuration);
-    event CommitmentOver(uint withdrawalDuration);
-    event WithdrawalOver(uint openingDuration);
+    event CommitmentOver(uint withdrawalDuration, uint liveBidders);
+    event WithdrawalOver(uint openingDuration, uint liveBidders);
     event AuctionEnded(address winner, uint amount);
 
     // the events below are emitted for each new bidder / withdrawer
@@ -86,10 +86,8 @@ contract VickreyAuction {
     /*
      * This function is only accepted when in commitment phase
      */
-    function bid(bytes32 hash) external payable {
+    function bid(bytes32 hash) external payable changeAuctionPhase(block.number) {
 
-        // First thing I do is check the current phase.
-        changeAuctionPhase(block.number);
         // At this point auctionStatus is updated
         require(auctionStatus == AuctionStatus.COMMITMENT, "Sorry, current phase is not commitment");
         require(msg.value >= depositRequirement, "Sorry, You forgot to pay the deposit");
@@ -109,10 +107,8 @@ contract VickreyAuction {
     /*
      * This function is only accepted when in withdrawal phase
      */
-    function withdraw() external {
+    function withdraw() external changeAuctionPhase(block.number) {
 
-        // First thing I do is check the current phase.
-        changeAuctionPhase(block.number);
         // At this point auctionStatus is updated
         require(auctionStatus == AuctionStatus.WITHDRAWAL, "Sorry, current phase is not withdrawal");
         // I have to find his commitment
@@ -132,18 +128,21 @@ contract VickreyAuction {
     /*
      * This function is only accepted while in the opening phase
      */
-    function open(uint nonce) external payable returns (bool) {
+    function open(uint nonce) external changeAuctionPhase(block.number) payable returns (bool) {
 
-        // First thing I do is check the current phase.
-        changeAuctionPhase(block.number);
         // At this point auctionStatus is updated
         require(auctionStatus == AuctionStatus.OPENING, "Sorry, current phase is not opening");
         Commitment memory comm = commitments[msg.sender];
         // I have to check that it was not already open or withdrawn
         require(comm.status == BidStatus.COMMITED, "Sorry, your commitment is not valid");
         bytes32 hash = keccak256(abi.encodePacked(nonce, msg.value));
-        require(hash == comm.hash, "Sorry, your hash value does not coincide with the commitment one");
-
+        if(hash != comm.hash || msg.value < reservePrice) {
+            // I was sent an invalid bid, I record that this account doesn't get a refund
+            commitments[msg.sender].status = BidStatus.PAID;
+            commitments[msg.sender].pendingRefund = 0;
+            require(hash == comm.hash, "Your declared hash value does not coincide");
+            require(msg.value >= reservePrice, "You sent less amount than the reserve price");
+        }
         // At this point the commitment was valid, I have to see if this might be a winner
 
         if(msg.value > topPayment) {
@@ -170,10 +169,9 @@ contract VickreyAuction {
 
     }
 
-    function finalize() external {
+    function finalize() external changeAuctionPhase(block.number) {
 
         require(msg.sender == owner, "Only the owner can finalize an auction");
-        changeAuctionPhase(block.number);
         require(auctionStatus == AuctionStatus.ENDED, "Sorry, too early to call finalize");
         // At this point I'm sure that I can finalize
         auctionStatus = AuctionStatus.FINALIZED;
@@ -211,10 +209,10 @@ contract VickreyAuction {
      * time, but events may fire late
      * This is not a view Function since it writes the auctionStatus variable
      */
-    function changeAuctionPhase(uint nowT) private {
+    modifier changeAuctionPhase(uint nowT) {
 
-        // I call this function only if the status is not ENDED or FINALIZED
-        require(auctionStatus < AuctionStatus.ENDED, "The auction is over, sorry");
+        // I have to check for the state only if the auction is not ended
+        if(auctionStatus >= AuctionStatus.ENDED) return;
 
         uint timeDiff = nowT - activationTime;
         // I use the integer below the enum to compute the number of phases passed
@@ -244,9 +242,9 @@ contract VickreyAuction {
             if(prev == uint(AuctionStatus.GRACE))
                 emit GraceTimeOver(reservePrice, depositRequirement, commitmentDuration);
             else if(prev == uint(AuctionStatus.COMMITMENT))
-                emit CommitmentOver(withdrawalDuration);
+                emit CommitmentOver(withdrawalDuration, commitmentCount);
             else if(prev == uint(AuctionStatus.WITHDRAWAL))
-                emit WithdrawalOver(openingDuration);
+                emit WithdrawalOver(openingDuration, commitmentCount);
             else if(prev == uint(AuctionStatus.OPENING))
                 emit AuctionEnded(winner, winningPrice);
             else
@@ -256,16 +254,15 @@ contract VickreyAuction {
             prev++;
             diff--;
         }
+        // After that I execute the code of the function
+        _;
 
     }
 
     /*
      * This method simply calls the function that checks if it has to change the auction time
-     * and it can only be called by the auction owner
      */
-    function updateCurrentPhase() external {
-        require(msg.sender == owner, "This function is restricted to the auction owner");
-        changeAuctionPhase(block.number);
+    function updateCurrentPhase() external changeAuctionPhase(block.number) {
     }
 
     /* ------------- Getters from now on ------------- */
@@ -342,6 +339,39 @@ contract VickreyAuction {
             else
                 return "This commitment has been refunded";
         }
+    }
+
+    function getMyCommitmentStatus() external view returns (string memory) {
+        Commitment memory comm = commitments[msg.sender];
+        if(comm.status == BidStatus.NOTEXISTING)
+            return "This commitment does not exist";
+        else if(comm.status == BidStatus.COMMITED)
+            return "This commitment is valid and not opened yet";
+        else if(comm.status == BidStatus.WITHDRAWN)
+            return "This commitment was withdrawn";
+        else if(comm.status == BidStatus.OPEN) {
+            if(winner == msg.sender)
+                return "This commitment is currently winning";
+            else
+                return "This commitment was opened, but is not winning";
+        } else {
+            if(winner == msg.sender)
+                return "This commitment has won!";
+            else
+                return "This commitment has been refunded";
+        }
+    }
+
+    function getCommitmentPendingRefunds(address addr) external view returns (uint) {
+        Commitment memory comm = commitments[addr];
+        require(comm.status != BidStatus.NOTEXISTING, "Bid not found");
+        return comm.pendingRefund;
+    }
+
+    function getMyCommitmentPendingRefunds() external view returns (uint) {
+        Commitment memory comm = commitments[msg.sender];
+        require(comm.status != BidStatus.NOTEXISTING, "Bid not found");
+        return comm.pendingRefund;
     }
 
 }

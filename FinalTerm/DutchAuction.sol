@@ -68,6 +68,8 @@ contract DutchAuction {
         // In this case I am in the right time span to make bids
         uint currentPrice = decreaseLogic.
                         computeCurrentPrice(activationTime + graceTime, duration, startPrice, nowT, reservePrice);
+
+        assert(currentPrice >= reservePrice);
         // I have computed the current price, but I have to check that enough ether was passed
         require(msg.value >= currentPrice, "Sorry, current price is higher");
         // At this point I'm sure that I had enough money to end the auction
