@@ -7,6 +7,7 @@
 \usepackage[font=footnotesize,labelfont={sf,bf}]{caption}
 \usepackage{hyperref}
 \usepackage{mathtools}
+\usepackage{booktabs}
 %\usepackage{float}
 
 
@@ -26,11 +27,12 @@
 \section*{Attached Files Structure}
 
 	Attached with the project comes the auction files. The chosen auction is the Dutch one. \\
-	The final term code consists of three files:
+	The final term code consists of four files:
 	\begin{itemize}
 		\item \emph{dutchAuction.sol}: This file contains the Dutch auction logic. More details are explained in section \nameref{sec:dutchAuction}.
 		\item \emph{decreaseLogic.sol}: This file, to be associated with \emph{dutchAuction.sol}, contains the \emph{DecreaseLogic} interface contracts, and the 3 implemented logics: \emph{Linear}, \emph{Exponential} and \emph{Logarithmic}.
 		\item \emph{vickreyAuction.sol}: This file contains the logic of the Vickrey Auction. Further details are explained in section \nameref{sec:vickreyAuction}.
+		\item \emph{util.sol}: This file contains one function to compute the \emph{Keccak256} function needed for the Vickrey auction.
 	\end{itemize}
 
 \section*{Notes Common to Both Auctions}
@@ -74,7 +76,7 @@
 	The $\ceil{\log_2x}$ function, used in order to implement both the logarithmic and the exponential decrease logic, was copied from a forum online. It uses inline assembly code and has a fixed cost of 757 \emph{wei}.
 	
 	\subsection*{Testing}
-	In this section the \emph{Remix} deployment and the \emph{gas evaluation} will be addressed for the Dutch Auction. The evaluation will be done with the JavaScript VM.
+	In this section the \emph{Remix} deployment and the \emph{gas evaluation} will be addressed for the Dutch Auction. The evaluation will be done with the JavaScript VM with the \emph{listen on network} box unchecked, in order to only consider the transactions made by the user when mining blocks.
 	
 		\paragraph*{Test Setup}: In order to test the Dutch Auction, the subsequent actions will be performed:
 		\begin{enumerate}
@@ -88,15 +90,15 @@
 		\end{enumerate}
 	
 		\paragraph*{Gas Evaluation}
-		The cost of the various points have been computed as: 
+		The cost of the various points has been computed as: 
 		\begin{itemize}
-			\item The cost of deploying the two contracts (Decrease Logic and Dutch Auction) are respectively 88\,735 and 650\,446 wei. 
-			\item The cost of skipping the grace period is 830 wei and will be neglected.
-			\item The cost of every losing bid is 4687 and it is fixed (since they all fail at the same instruction). 
-			\item The cost paid by the winner is fixed and it is 41\,619 wei. If instead the auction ends without a winner (the duration expires), then the cost is around 23\,651 wei.
+			\item The cost of deploying the two contracts (Decrease Logic and Dutch Auction) are respectively 88\,735 and 650\,446 gas. 
+			\item The cost of skipping the grace period is 830 gas and will be neglected.
+			\item The cost of every losing bid is 4687 gas and it is fixed (since they all fail at the same instruction). 
+			\item The cost paid by the winner is fixed and it is 41\,619 gas. If instead the auction ends without a winner (the duration expires), then the cost is around 23\,651 gas.
 		\end{itemize}
 		Taking those values, then the final cost can be approximated as: $$totalCost \approx 88\,735 + 650\,446 + (4\,687 * \#losingBids) + lastEventCost $$
-		Neglecting the losing bids, the auction owner pays around 740\,000 wei, while the winner pays around 40\,000 wei.
+		Neglecting the losing bids, the auction owner pays around 740\,000 gas, while the winner pays around 40\,000 gas.
 			
 
 \section*{Vickrey Auction}
@@ -111,6 +113,18 @@
 		\item \emph{finalize()}: This function can only be called by the owner of the auction, and only when the auction state is \emph{ENDED}. This method simply refunds all the not yet refunded accounts.
 		\item \emph{changeAuctionTime()}: This method simply calls the modifier specified to change the auction phase.
 	\end{itemize}
+	One important thing regarding this auction should be noted. Every call to any of the main functions potentially updates the state of the contract, because of the lazy check on the current phase. This means that it is not possible to use the \emph{require} keyword, which implies a \emph{revert} call on the EVM, which would make the call to the phase modifier useless. The checks are performed, and a return code is returned.
+	The return code is an integer, and it is:
+	\begin{itemize}
+		\item 0 for and ok call
+		\item 1 for a call made in the wrong phase
+		\item 2 for a call made with insufficient funds
+		\item 3 for a not found commitment
+		\item 4 for a not valid call
+		\item 5 for an valid bid, but which has surely lost the auction
+		\item 6 for a not allowed method call
+	\end{itemize} 
+	What this means is that, even wrong calls (those ones that do not satisfy the method specifications), are used to update the contract state (in particular, the auction state). This is to be considered as an incentive to make right calls. 
 
 	\paragraph*{Events}
 	The events that are generated by this auction are:
@@ -122,6 +136,56 @@
 	\subsection*{Testing}
 	In this section the \emph{Remix} deployment and the \emph{gas evaluation} will be addressed for the Vickrey Auction. \\ 
 
+	
+	\paragraph*{Test Setup}: In order to test the Vickrey Auction, the subsequent actions will be performed:
+	\begin{enumerate}
+		\item \emph{Activate compiler and deployer}: As for the Dutch one, compiler and transaction deployer are both needed
+		\item \emph{Compile util.sol and vickreyAuction.sol}: The compiler version used in this examples is 0.5.1+commit.c8a2cb62 with enabled optimizations. Contract \emph{util.sol} should be deployed before compiling, since for some reason compiling another file makes the executable disappear. It is a fake contract, and its cost should be neglected. It is only useful for the user to provide an easy way to compute the \emph{keccak256} function of the nonce and the amount, being those two elements correctly placed in a bytes32 buffer as the contract expects. Otherwise, below this section there will be a table with a set of precomputed \emph{keccak256} outputs.
+		\item \emph{Deploy the Vickrey Auction}: At this point the contract can be deployed. It is recommended to use low durations for the various periods (like, for example 5 blocks), because to perform a phase switch, a main function is going to be called.
+		\item \emph{Make the grace period expire}: In a similar way with respect to the Dutch auction, just a main method call is going to be enough to perform the phase switch.
+		\item \emph{Commitment phase}: Now it is time to perform some bids (any other method, except for \emph{checkAuctionPhase()}, is locked). Consider that the expected input of a bid is a hash with type \emph{bytes32}. This input type is very strict, and any non matching function call is refused. This means that it is not possible to make fake bids with parameters like \emph{0x0, 0, 0x1111111}, because they will all get refused by the EVM. Invalid bids should be created ad hoc with the \emph{util.sol} contract (for example by using 0 as amount, or invalid nonces...).
+		In order to perform a commitment it is just needed to use the function \emph{getKeccak(nonce, amount)} from the util contract. Compute the value and using it as parameter. Remember to keep track of the nonces used and the amount sent. Perform those commitments with different accounts.
+		\item \emph{Withdrawal phase}: In this phase only two methods are allowed (\emph{withdraw()} and \emph{checkAuctionPhase()}). Remember anyway that any call (for example to \emph{bid()}) will virtually mine a block, so always consider the durations passed as parameters when calling any of the main methods.
+		\item \emph{Opening phase}: At this point the first bids can be opened. A suggestion would be to open the winning bid early, in order to see that subsequent bids get refunded during this phase.
+		\item \emph{Finalize}: This is the end of the auction, so the \emph{finalize()} method will have to be called.
+	\end{enumerate}
+	Table \ref{keccak} containing some precomputed \emph{keccak256} values. The nonce used in this examples is always 123.
+	\begin{table}[ht]
+		\centering
+		\begin{tabular}{cc}
+			\toprule
+			amount			&		keccak256		\\
+			$[$wei]			&	[bytes32]			\\
+			\midrule
+			100	&	0xa7a5334673a8a584579f0818e23518ff24d11104b4dd0e048de82cc6277519a8	\\
+			200	&	0x20b2cd778463c40ec253a86b7d3d1a90a12df6e4e76ccc01714e119ae42a9e93	\\
+			500	&	0xa6708b3b03fd25062084301805a60c65263a30bacbec7835a1c607b0b3193bd7	\\
+			1\,000 & 0xbe1e9df8fd1dfa794e3e308e8eaeb0c81bd5a71b7bfadaa1ac364f1634f7349b	\\
+			1\,500 & 0xc51ac2e1ebd9e01d7eb5e75c5da3f3514003d70e6ae3ebf376c4668de170095f	\\
+			2\,000 & 0x2116bcf3740f445e8d3d99fad343b14699444eeaab657400157d6dae4659c4dd	\\
+			3\,000 & 0x34a3d2153b1546c2defe31082602ce6674c70fdc3f44a16ab67fbda6d16f4f7f	\\
+			5\,000 & 0x88f4b0a9c6a6c5001b0c264116c231b40d0ac7c6c3b02ead4774c61e0d591300	\\
+			10\,000 & 0x99ab724b476b98e1a5135ae0c80639dcbff4faf19c5b90fe3f7bbbfcce827244\\
+			50\,000 & 0xb4b69dbb8aa3a48628b3f00bce86d21524da5c915032ee9403b56df5cead52bd \\
+			\bottomrule
+		\end{tabular}
+		\caption{Some Keccak function outputs. The nonce in each one of those output is fixed to 123.}
+		\label{keccak}
+	\end{table}
+	
+	\paragraph*{Gas Evaluation}
+	An important note regarding gas evaluation should be taken into account. Being that events are fired every time that a phase switch occurs, the cost of those events relies on the shoulder of the unlucky participants. To evaluate the gas cost of these methods, a perfect auction owner assumption will be made, which means that the owner will perform a \emph{changeAuctionPhase()} every time that a phase switch is submitted. The cost of the events emitted by the phase switch relies solely on the owner of the auction. \\
+	The cost of the various points has been computed as: 
+	\begin{itemize}
+		\item The cost of deploying the auction contract is 1\,888\,760 gas. 
+		\item The cost of a phase switch (assumed on the shoulders of the auction owner) is around 51\,000 gas totally (considering every phase switch).
+		\item \emph{bid()}: A successful commitment costs around 100\,000 gas (the first one costs a little more, the following ones cost less), while instead it costs around 2\,500 for a failing one.
+		\item \emph{withdraw()}: A successful withdraw costs 20\,326, while a failing one costs around 3\,000.
+		\item \emph{open()}: An opening which might still win costs 61\,086, while a losing but correct commitment opening costs. An opening which is discovered to have paid a lower price with respect to the reserve price costs around 15\,000 gas.
+		\item \emph{finalize()}: The cost of the finalize function is very dependant on the number of participants to the auction. 
+	\end{itemize}
+
+	Neglecting the losing bids, the auction owner pays around 1\,940\,000 wei + the cost of \emph{finalize()}, while correct bidders pay something around 200\,000 gas.
 	
 	
 

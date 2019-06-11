@@ -8,7 +8,12 @@ contract VickreyAuction {
     enum AuctionStatus {GRACE, COMMITMENT, WITHDRAWAL, OPENING, ENDED, FINALIZED}
     // This model the "state" of a single bid, where PAID means that I refunded
     // all the pending money and I no longer owe that account
-    enum BidStatus {NOTEXISTING, COMMITED, WITHDRAWN, OPEN, PAID}
+    enum BidStatus {NOT_EXISTING, COMMITED, WITHDRAWN, OPEN, PAID}
+
+    // Return codes, surely lost is returned to a bid which is already not
+    //  the best one
+    enum ReturnCode {OK, WRONG_PHASE, INSUFFICIENT_FUNDS, NOT_FOUND,
+                    NOT_VALID, SURELY_LOST, NOT_ALLOWED}
 
     // hash is the commitment "box", status is the one before and pending
     // refund is the amount that was paid by an account until one moment
@@ -83,123 +88,9 @@ contract VickreyAuction {
         winningPrice = reservePrice;
     }
 
-    /*
-     * This function is only accepted when in commitment phase
-     */
-    function bid(bytes32 hash) external payable changeAuctionPhase(block.number) {
+    /* ------------ below is the only provided modifier ---------------- */
 
-        // At this point auctionStatus is updated
-        require(auctionStatus == AuctionStatus.COMMITMENT, "Sorry, current phase is not commitment");
-        require(msg.value >= depositRequirement, "Sorry, You forgot to pay the deposit");
-
-        // At this point the commitment is successful, I record everything
-        commitmentCount++;
-        // I save that I might have to refund msg.value, This is the deposit plus
-        // the extra ether that he gave me. If he withdraws I will handle this
-        // case accordingly
-        commitments[msg.sender] = Commitment(hash, BidStatus.COMMITED, msg.value);
-        possibleRefunds.push(msg.sender);
-
-        // And I emit an event for the new commitment
-        emit NewCommitment(msg.sender, hash, commitmentCount);
-    }
-
-    /*
-     * This function is only accepted when in withdrawal phase
-     */
-    function withdraw() external changeAuctionPhase(block.number) {
-
-        // At this point auctionStatus is updated
-        require(auctionStatus == AuctionStatus.WITHDRAWAL, "Sorry, current phase is not withdrawal");
-        // I have to find his commitment
-        require(commitments[msg.sender].status == BidStatus.COMMITED, "Your transaction was not found");
-
-        // I found the commitment, I record that it was withdrawn and I record that I have
-        // to send back half the deposit
-        commitments[msg.sender].status = BidStatus.WITHDRAWN;
-        // In pending refund I have a whole deposit, I have to cut half of it
-        commitments[msg.sender].pendingRefund -= depositRequirement / 2;
-        commitmentCount--;
-
-        // Now I emit the event signaling the withdrawal
-        emit NewWithdrawal(msg.sender, commitmentCount);
-    }
-
-    /*
-     * This function is only accepted while in the opening phase
-     */
-    function open(uint nonce) external changeAuctionPhase(block.number) payable returns (bool) {
-
-        // At this point auctionStatus is updated
-        require(auctionStatus == AuctionStatus.OPENING, "Sorry, current phase is not opening");
-        Commitment memory comm = commitments[msg.sender];
-        // I have to check that it was not already open or withdrawn
-        require(comm.status == BidStatus.COMMITED, "Sorry, your commitment is not valid");
-        bytes32 hash = keccak256(abi.encodePacked(nonce, msg.value));
-        if(hash != comm.hash || msg.value < reservePrice) {
-            // I was sent an invalid bid, I record that this account doesn't get a refund
-            commitments[msg.sender].status = BidStatus.PAID;
-            commitments[msg.sender].pendingRefund = 0;
-            require(hash == comm.hash, "Your declared hash value does not coincide");
-            require(msg.value >= reservePrice, "You sent less amount than the reserve price");
-        }
-        // At this point the commitment was valid, I have to see if this might be a winner
-
-        if(msg.value > topPayment) {
-            // Then it is the current winner
-            winner = msg.sender;
-            winningPrice = topPayment;
-            topPayment = msg.value;
-            commitments[msg.sender].status = BidStatus.OPEN;
-            // I save the fact that I might have to refund this value
-            // and will handle the actual winner in a different manner
-            commitments[msg.sender].pendingRefund += msg.value;
-            // return true means that the sender is a winner contender
-            return true;
-        } else {
-            // I refund the user immediatly
-            if(msg.value > winningPrice) // I have to update the second best cost
-                winningPrice = msg.value;
-            msg.sender.transfer(commitments[msg.sender].pendingRefund + msg.value);
-            commitments[msg.sender].pendingRefund = 0;
-            commitments[msg.sender].status = BidStatus.PAID;
-            // false means the bidder was refunded and cannot win
-            return false;
-        }
-
-    }
-
-    function finalize() external changeAuctionPhase(block.number) {
-
-        require(msg.sender == owner, "Only the owner can finalize an auction");
-        require(auctionStatus == AuctionStatus.ENDED, "Sorry, too early to call finalize");
-        // At this point I'm sure that I can finalize
-        auctionStatus = AuctionStatus.FINALIZED;
-        for(uint i = 0; i < possibleRefunds.length; i++) {
-            // for each participant I check his commitment, and see if
-            // he needs to be refunded
-            Commitment memory comm = commitments[possibleRefunds[i]];
-            if(comm.status != BidStatus.PAID) {
-                // Paid means that I have already refunded this account
-                // I record that I will not refund this account
-                commitments[possibleRefunds[i]].status = BidStatus.PAID;
-                if(possibleRefunds[i] == winner) {
-                    // If he is the winner, I have to remove from the pending
-                    // refund the winning amount, but I can give him back
-                    // the whole deposit and the extra
-                    winner.transfer(comm.pendingRefund - winningPrice);
-                } else {
-                    // Not a winner, so I can transfer the whole amount of money
-                    possibleRefunds[i].transfer(comm.pendingRefund);
-                }
-                commitments[possibleRefunds[i]].pendingRefund = 0;
-            }
-            // I pay the owner the amount
-            owner.transfer(winningPrice);
-        }
-    }
-
-    /*
+     /*
      * This is the main method used to switch from a phase to another.
      * It is invoked in two ways:
      * - Every time one of the main methods is called (bid, withdraw, open)
@@ -259,6 +150,131 @@ contract VickreyAuction {
         // After that I execute the code of the function
         _;
 
+    }
+
+    /*
+     * This function is only accepted when in commitment phase
+     */
+    function bid(bytes32 hash) external payable changeAuctionPhase(block.number) returns (ReturnCode) {
+
+        // At this point auctionStatus is updated
+        if(auctionStatus != AuctionStatus.COMMITMENT)
+            return ReturnCode.WRONG_PHASE;
+        if(msg.value < depositRequirement)
+            return ReturnCode.INSUFFICIENT_FUNDS;
+        if(commitments[msg.sender].status != BidStatus.NOT_EXISTING)
+            return ReturnCode.NOT_VALID;
+
+        // At this point the commitment is successful, I record everything
+        commitmentCount++;
+        // I save that I might have to refund msg.value, This is the deposit plus
+        // the extra ether that he gave me. If he withdraws I will handle this
+        // case accordingly
+        commitments[msg.sender] = Commitment(hash, BidStatus.COMMITED, msg.value);
+        possibleRefunds.push(msg.sender);
+
+        // And I emit an event for the new commitment
+        emit NewCommitment(msg.sender, hash, commitmentCount);
+    }
+
+    /*
+     * This function is only accepted when in withdrawal phase
+     */
+    function withdraw() external changeAuctionPhase(block.number) returns (ReturnCode) {
+
+        // At this point auctionStatus is updated
+        if(auctionStatus != AuctionStatus.WITHDRAWAL)
+            return ReturnCode.WRONG_PHASE;
+        // I have to find his commitment
+        if(commitments[msg.sender].status != BidStatus.COMMITED)
+            return ReturnCode.NOT_FOUND;
+
+        // I found the commitment, I record that it was withdrawn and I record that I have
+        // to send back half the deposit
+        commitments[msg.sender].status = BidStatus.WITHDRAWN;
+        // In pending refund I have a whole deposit, I have to cut half of it
+        commitments[msg.sender].pendingRefund -= depositRequirement / 2;
+        commitmentCount--;
+
+        // Now I emit the event signaling the withdrawal
+        emit NewWithdrawal(msg.sender, commitmentCount);
+    }
+
+    /*
+     * This function is only accepted while in the opening phase
+     */
+    function open(uint nonce) external changeAuctionPhase(block.number) payable returns (ReturnCode) {
+
+        // At this point auctionStatus is updated
+        if(auctionStatus != AuctionStatus.OPENING)
+            return ReturnCode.WRONG_PHASE;
+        Commitment memory comm = commitments[msg.sender];
+        // I have to check that it was not already open or withdrawn
+        if(comm.status != BidStatus.COMMITED)
+            return ReturnCode.NOT_FOUND;
+        bytes32 hash = keccak256(abi.encodePacked(nonce, msg.value));
+        if(hash != comm.hash || msg.value < reservePrice) {
+            // I was sent an invalid bid, I record that this account doesn't get a refund
+            commitments[msg.sender].status = BidStatus.PAID;
+            commitments[msg.sender].pendingRefund = 0;
+            return ReturnCode.NOT_VALID;
+        }
+        // At this point the commitment was valid, I have to see if this might be a winner
+
+        if(msg.value > topPayment) {
+            // Then it is the current winner
+            winner = msg.sender;
+            winningPrice = topPayment;
+            topPayment = msg.value;
+            commitments[msg.sender].status = BidStatus.OPEN;
+            // I save the fact that I might have to refund this value
+            // and will handle the actual winner in a different manner
+            commitments[msg.sender].pendingRefund += msg.value;
+            // return true means that the sender is a winner contender
+            return ReturnCode.OK;
+        } else {
+            // I refund the user immediatly
+            if(msg.value > winningPrice) // I have to update the second best cost
+                winningPrice = msg.value;
+            msg.sender.transfer(commitments[msg.sender].pendingRefund + msg.value);
+            commitments[msg.sender].pendingRefund = 0;
+            commitments[msg.sender].status = BidStatus.PAID;
+            // false means the bidder was refunded and cannot win
+            return ReturnCode.SURELY_LOST;
+        }
+
+    }
+
+    function finalize() external changeAuctionPhase(block.number) returns (ReturnCode) {
+
+        if(msg.sender != owner)
+            return ReturnCode.NOT_ALLOWED;
+        if(auctionStatus != AuctionStatus.ENDED)
+            return ReturnCode.WRONG_PHASE;
+        // At this point I'm sure that I can finalize
+        auctionStatus = AuctionStatus.FINALIZED;
+        for(uint i = 0; i < possibleRefunds.length; i++) {
+            // for each participant I check his commitment, and see if
+            // he needs to be refunded
+            Commitment memory comm = commitments[possibleRefunds[i]];
+            if(comm.status == BidStatus.OPEN || comm.status == BidStatus.WITHDRAWN) {
+                // I only refund OPEN or WITHDRAWN bids (so I do not refund
+                // commited bids or already refunded ones)
+                commitments[possibleRefunds[i]].status = BidStatus.PAID;
+                if(possibleRefunds[i] == winner) {
+                    // If he is the winner, I have to remove from the pending
+                    // refund the winning amount, but I can give him back
+                    // the whole deposit and the extra
+                    winner.transfer(comm.pendingRefund - winningPrice);
+                } else {
+                    // Not a winner, so I can transfer the whole amount of money
+                    possibleRefunds[i].transfer(comm.pendingRefund);
+                }
+                commitments[possibleRefunds[i]].pendingRefund = 0;
+            }
+            // I pay the owner the amount
+            owner.transfer(winningPrice);
+        }
     }
 
     /*
@@ -324,7 +340,7 @@ contract VickreyAuction {
 
     function getCommitmentStatus(address addr) external view returns (string memory) {
         Commitment memory comm = commitments[addr];
-        if(comm.status == BidStatus.NOTEXISTING)
+        if(comm.status == BidStatus.NOT_EXISTING)
             return "This commitment does not exist";
         else if(comm.status == BidStatus.COMMITED)
             return "This commitment is valid and not opened yet";
@@ -345,7 +361,7 @@ contract VickreyAuction {
 
     function getMyCommitmentStatus() external view returns (string memory) {
         Commitment memory comm = commitments[msg.sender];
-        if(comm.status == BidStatus.NOTEXISTING)
+        if(comm.status == BidStatus.NOT_EXISTING)
             return "This commitment does not exist";
         else if(comm.status == BidStatus.COMMITED)
             return "This commitment is valid and not opened yet";
@@ -366,14 +382,26 @@ contract VickreyAuction {
 
     function getCommitmentPendingRefunds(address addr) external view returns (uint) {
         Commitment memory comm = commitments[addr];
-        require(comm.status != BidStatus.NOTEXISTING, "Bid not found");
+        require(comm.status != BidStatus.NOT_EXISTING, "Bid not found");
         return comm.pendingRefund;
     }
 
     function getMyCommitmentPendingRefunds() external view returns (uint) {
         Commitment memory comm = commitments[msg.sender];
-        require(comm.status != BidStatus.NOTEXISTING, "Bid not found");
+        require(comm.status != BidStatus.NOT_EXISTING, "Bid not found");
         return comm.pendingRefund;
+    }
+
+    function getMyCommitmentHash() external view returns (bytes32) {
+        Commitment memory comm = commitments[msg.sender];
+        require(comm.status != BidStatus.NOT_EXISTING, "Bid not found");
+        return comm.hash;
+    }
+
+    function getCommitmentHash(address addr) external view returns (bytes32) {
+        Commitment memory comm = commitments[addr];
+        require(comm.status != BidStatus.NOT_EXISTING, "Bid not found");
+        return comm.hash;
     }
 
 }
