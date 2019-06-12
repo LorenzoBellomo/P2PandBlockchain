@@ -64,8 +64,11 @@ contract VickreyAuction {
     event AuctionEnded(address winner, uint amount);
 
     // the events below are emitted for each new bidder / withdrawer
+    // and newLeader that is emitted during the opening phase every time
+    // an opening becomes the new leader
     event NewCommitment(address bidder, bytes32 secret, uint liveBidders);
     event NewWithdrawal(address withdrawer, uint liveBidders);
+    event NewLeader(address currentWinner, uint topPayment);
 
     constructor(
                 uint _reservePrice,
@@ -105,47 +108,48 @@ contract VickreyAuction {
     modifier changeAuctionPhase(uint nowT) {
 
         // I have to check for the state only if the auction is not ended
-        if(auctionStatus >= AuctionStatus.ENDED) return;
+        if(auctionStatus < AuctionStatus.ENDED) {
 
-        uint timeDiff = nowT - activationTime;
-        // I use the integer below the enum to compute the number of phases passed
-        // The association is done starting by 0 (GRACE = 0, COMMITMENT = 1...)
-        uint prev = uint(auctionStatus);
+            uint timeDiff = nowT - activationTime;
+            // I use the integer below the enum to compute the number of phases passed
+            // The association is done starting by 0 (GRACE = 0, COMMITMENT = 1...)
+            uint prev = uint(auctionStatus);
 
-        // Below is just a way to compute in which phase I am now, I store the current
-        // phase int he auctionStatus variable on the blockchain
-        if(timeDiff < graceTime) {
-            auctionStatus = AuctionStatus.GRACE;
-        } else if(timeDiff < commitmentDuration + graceTime) {
-            auctionStatus = AuctionStatus.COMMITMENT;
-        } else if(timeDiff < withdrawalDuration + graceTime + commitmentDuration) {
-            auctionStatus = AuctionStatus.WITHDRAWAL;
-        } else if(timeDiff < withdrawalDuration + graceTime + commitmentDuration + openingDuration) {
-            auctionStatus = AuctionStatus.OPENING;
-        } else {
-            auctionStatus = AuctionStatus.ENDED;
-        }
+            // Below is just a way to compute in which phase I am now, I store the current
+            // phase int he auctionStatus variable on the blockchain
+            if(timeDiff < graceTime) {
+                auctionStatus = AuctionStatus.GRACE;
+            } else if(timeDiff < commitmentDuration + graceTime) {
+                auctionStatus = AuctionStatus.COMMITMENT;
+            } else if(timeDiff < withdrawalDuration + graceTime + commitmentDuration) {
+                auctionStatus = AuctionStatus.WITHDRAWAL;
+            } else if(timeDiff < withdrawalDuration + graceTime + commitmentDuration + openingDuration) {
+                auctionStatus = AuctionStatus.OPENING;
+            } else {
+                auctionStatus = AuctionStatus.ENDED;
+            }
 
-        // diff will be the number of phases passed
-        uint diff = uint(auctionStatus) - prev;
+            // diff will be the number of phases passed
+            uint diff = uint(auctionStatus) - prev;
 
-        while(diff > 0) {
-            // I have to emit an event for each phase that is passed
-            // So I match the previous event and I emit its relative event
-            if(prev == uint(AuctionStatus.GRACE))
-                emit GraceTimeOver(reservePrice, depositRequirement, commitmentDuration);
-            else if(prev == uint(AuctionStatus.COMMITMENT))
-                emit CommitmentOver(withdrawalDuration, commitmentCount);
-            else if(prev == uint(AuctionStatus.WITHDRAWAL))
-                emit WithdrawalOver(openingDuration, commitmentCount);
-            else if(prev == uint(AuctionStatus.OPENING))
-                emit AuctionEnded(winner, winningPrice);
-            else
-                break;
-            // I have emitted the event, now I need to check if I have to emit
-            // the next one
-            prev++;
-            diff--;
+            while(diff > 0) {
+                // I have to emit an event for each phase that is passed
+                // So I match the previous event and I emit its relative event
+                if(prev == uint(AuctionStatus.GRACE))
+                    emit GraceTimeOver(reservePrice, depositRequirement, commitmentDuration);
+                else if(prev == uint(AuctionStatus.COMMITMENT))
+                    emit CommitmentOver(withdrawalDuration, commitmentCount);
+                else if(prev == uint(AuctionStatus.WITHDRAWAL))
+                    emit WithdrawalOver(openingDuration, commitmentCount);
+                else if(prev == uint(AuctionStatus.OPENING))
+                    emit AuctionEnded(winner, winningPrice);
+                else
+                    break;
+                // I have emitted the event, now I need to check if I have to emit
+                // the next one
+                prev++;
+                diff--;
+            }
         }
         // After that I execute the code of the function
         _;
@@ -224,21 +228,23 @@ contract VickreyAuction {
         if(msg.value > topPayment) {
             // Then it is the current winner
             winner = msg.sender;
-            winningPrice = topPayment;
+            if(topPayment != 0)
+                winningPrice = topPayment;
             topPayment = msg.value;
             commitments[msg.sender].status = BidStatus.OPEN;
             // I save the fact that I might have to refund this value
             // and will handle the actual winner in a different manner
             commitments[msg.sender].pendingRefund += msg.value;
-            // return true means that the sender is a winner contender
+            // I emit the event regarding the new auction leader
+            emit NewLeader(msg.sender, topPayment);
             return ReturnCode.OK;
         } else {
             // I refund the user immediatly
             if(msg.value > winningPrice) // I have to update the second best cost
                 winningPrice = msg.value;
+            commitments[msg.sender].status = BidStatus.PAID;
             msg.sender.transfer(commitments[msg.sender].pendingRefund + msg.value);
             commitments[msg.sender].pendingRefund = 0;
-            commitments[msg.sender].status = BidStatus.PAID;
             // false means the bidder was refunded and cannot win
             return ReturnCode.SURELY_LOST;
         }
@@ -272,9 +278,10 @@ contract VickreyAuction {
                 }
                 commitments[possibleRefunds[i]].pendingRefund = 0;
             }
-            // I pay the owner the amount
-            owner.transfer(winningPrice);
         }
+        // Now I have to pay the owner
+        if(winner != address(0))
+            owner.transfer(winningPrice);
     }
 
     /*
