@@ -51,7 +51,7 @@ contract VickreyAuction {
     // mapping from address to commitments, with associated array to
     // loop over this collection
     mapping (address => Commitment) private commitments;
-    address payable[] possibleRefunds;
+    address payable[] private possibleRefunds;
 
     // number of currently active commitments on this auction
     // it is basically (numCommitments - numWithdrawals)
