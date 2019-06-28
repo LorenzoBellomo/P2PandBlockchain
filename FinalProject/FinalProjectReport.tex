@@ -1,0 +1,38 @@
+\documentclass[11pt, a4paper]{report}
+
+\usepackage{nameref}
+%\usepackage{graphicx} in case remember graphics path below
+\usepackage{lmodern}
+\usepackage[a4paper,top=3cm,bottom=4cm,left=3.5cm,right=3.5cm]{geometry}
+\usepackage[font=footnotesize,labelfont={sf,bf}]{caption}
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{booktabs}
+%\usepackage{float}
+
+
+%\graphicspath{ {./latexImages/} }
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+% Title Page
+\title{
+	FinalProject Peer2Peer Systems and blockchains \\
+	\large Development of a DAPP for Smart Auctions}
+\author{Lorenzo Bellomo, 531423}
+\date{}
+
+
+\begin{document}
+	\maketitle
+	
+\section*{Attached Files}
+
+\section*{Contracts ChangeLog}
+This section contains all the modifications applied to the delivered Final Term smart contracts. All the modifications have a motivation assigned.
+\begin{itemize}
+	\item \emph{Removed file Util.sol}: the only method that was provided in this file (computation of the nonce and amount hash for the Vickrey auction) has been moved to the file Vickrey auction. 
+\end{itemize}
+	
+	
+
+\end{document}          
+
