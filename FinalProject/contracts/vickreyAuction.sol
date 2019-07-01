@@ -6,7 +6,7 @@ pragma solidity ^0.5.0;
 contract VickreyAuction {
 
     // This model the phases of the auction
-    enum AuctionStatus {GRACE, COMMITMENT, WITHDRAWAL, OPENING, ENDED, FINALIZED}
+    enum AuctionStatus {NEW, GRACE, COMMITMENT, WITHDRAWAL, OPENING, ENDED, FINALIZED}
     // This model the "state" of a single bid, where PAID means that I refunded
     // all the pending money and I no longer owe that account
     enum BidStatus {NOT_EXISTING, COMMITED, WITHDRAWN, OPEN, PAID}
@@ -29,10 +29,10 @@ contract VickreyAuction {
     // It might be set lower in order to speed up the testing process
     uint constant graceTime = 2;
 
-    // addresses, the auctioneer and the owner are considered to be
-    // the same account
+    // addresses related to the contracts
     address payable private winner;
     address payable private owner;
+    address payable private auctioneer;
 
     // prices
     uint private reservePrice;
@@ -59,6 +59,7 @@ contract VickreyAuction {
     uint private commitmentCount;
 
     // the events below are the ones related to phase switch
+    event AuctionBegins(uint reservePrice, uint depositRequirement, uint graceTime);
     event GraceTimeOver(uint reservePrice, uint depositRequirement, uint commitmentDuration);
     event CommitmentOver(uint withdrawalDuration, uint liveBidders);
     event WithdrawalOver(uint openingDuration, uint liveBidders);
@@ -84,12 +85,40 @@ contract VickreyAuction {
         commitmentDuration = _commitmentDuration;
         openingDuration = _openingDuration;
         depositRequirement = _depositRequirement;
-        activationTime = block.number;
-        auctionStatus = AuctionStatus.GRACE;
+        auctionStatus = AuctionStatus.NEW;
         owner = msg.sender;
         commitmentCount = 0;
         topPayment = 0;
         winningPrice = reservePrice;
+    }
+
+    // New methods, see changelog in the report
+    /*
+     * This method allows to create the auction, notify the interested bidders 
+     * and put the auction in grace period. It explicitely takes the auctioneer 
+     * as a parameter to model also auction where the owner is not the auctioneer
+     */
+    function createAuction(address _auctioneer) external {
+        require(owner == msg.sender, "Only the owner decides the auctioneer");
+        require(auctionStatus == AuctionStatus.NEW, "Too late to decide");
+        auctionStatus = AuctionStatus.GRACE;
+        auctioneer = _auctioneer;
+        activationTime = block.number;
+        emit AuctionBegins(reservePrice, depositRequirement, graceTime)
+    }
+
+    /*
+     * This method allows to create the auction, notify the interested bidders 
+     * and put the auction in grace period. The auctioneer is not passed so 
+     * it is set to the owner himself
+     */
+    function createAuction() external {
+        require(owner == msg.sender, "Only the owner decides the auctioneer");
+        require(auctionStatus == AuctionStatus.NEW, "Too late to decide");
+        auctionStatus = AuctionStatus.GRACE;
+        activationTime = block.number;
+        auctioneer = owner;
+        emit AuctionBegins(reservePrice, depositRequirement, graceTime)
     }
 
     /* ------------ below is the only provided modifier ---------------- */
@@ -109,7 +138,7 @@ contract VickreyAuction {
     modifier changeAuctionPhase(uint nowT) {
 
         // I have to check for the state only if the auction is not ended
-        if(auctionStatus < AuctionStatus.ENDED) {
+        if(auctionStatus < AuctionStatus.ENDED && auctionStatus != NEW) {
 
             uint timeDiff = nowT - activationTime;
             // I use the integer below the enum to compute the number of phases passed
@@ -308,6 +337,10 @@ contract VickreyAuction {
 
     function getOwner() external view returns (address) {
         return owner;
+    }
+
+    function getAuctioneer() external view returns (address) {
+        return auctioneer;
     }
 
     function getReservePrice() external view returns (uint) {

@@ -29,7 +29,11 @@
 \section*{Contracts ChangeLog}
 This section contains all the modifications applied to the delivered Final Term smart contracts. All the modifications have a motivation assigned.
 \begin{itemize}
-	\item \emph{Removed file Util.sol}: the only method that was provided in this file (computation of the nonce and amount hash for the Vickrey auction) has been moved to the file Vickrey auction. 
+	\item \emph{Vickrey - Removed file Util.sol}: the only method that was provided in this file (computation of the nonce and amount hash for the Vickrey auction) has been moved to the file Vickrey auction. 
+	\item \emph{Both - Added auctioneer role}: the text of the project explicitely asks for an auctioneer role. The owner decides which account is the auctioneer when he calls the newly added method createAuction. If he does not decide an auctioneer, he becomes the one to take the role. As a note, in the Vickrey auction, the role of the auctioneer doesn't have a clear purpose. The way it will be used during the tests is to take care of the phase switches (at his expenses).
+	\item \emph{Both - Moved start time}: Both auctions, in the provided FinalTerm implementation, started in the moment the constructor was called. This was split in two phases. Phase one starts when the constructor is called, and it is the phase in which the auction is on the blockchain, but is not yet active (note, grace period is considered active). The secondPhase starts when the owner calls the method createAucion. In this method, the grace period begins and an event is emitted.
+	\item \emph{Dutch - added auctionPhase}: In order to better implement the previous point, the boolean variable ended has been changed to a phase enum in the Dutch Auction. The phases are NEW -> ALIVE -> ENDED.
+	\item \emph{Dutch - changed assert to require}: In order to better respect the require-assert definition, the assert in the constructor has been changed to a require.
 \end{itemize}
 	
 	

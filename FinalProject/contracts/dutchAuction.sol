@@ -9,15 +9,20 @@ import "./decreaseLogic.sol";
 // are all the getters
 contract DutchAuction {
 
+    // This model the phases of the auction
+    enum AuctionStatus {NEW, ALIVE, ENDED}
+
     // The grace time is constant and should be 20 to guarantee around 5
     // minutes of grace time (considering 15 seconds mining time avg)
     // It might be set lower in order to speed up the testing process
     uint constant graceTime = 2;
 
     address payable private owner;
+    address private auctioneer;
     address payable private winner;
-    // ended becomes true when the auction ends
-    bool private ended;
+    
+    AuctionStatus auctionStatus;
+    
     // prices
     uint private reservePrice;
     uint private startPrice;
@@ -28,6 +33,8 @@ contract DutchAuction {
 
     // This event gets fired whenever an auction ends
     event AuctionEnded(address winner, uint amount);
+    // The next one fires when it starts
+    event AuctionBegins(uint startPrice, uint reservePrice, uint duration);
 
     constructor(
                 uint _startPrice,
@@ -35,16 +42,44 @@ contract DutchAuction {
                 uint _duration,
                 DecreaseLogic _decreaseLogic
             ) public {
-        assert (_startPrice > _reservePrice);
+        require(_startPrice > _reservePrice, "Sorry, wrong arguments, check prices);
 
         startPrice = _startPrice;
         reservePrice = _reservePrice;
         duration = _duration;
         decreaseLogic = _decreaseLogic;
-        activationTime = block.number;
-        ended = false;
+        auctionStatus = AuctionStatus.NEW;
         owner = msg.sender;
         winner = address(0);
+    }
+
+    // New methods, see changelog in the report
+    /*
+     * This method allows to create the auction, notify the interested bidders 
+     * and put the auction in grace period. It explicitely takes the auctioneer 
+     * as a parameter to model also auction where the owner is not the auctioneer
+     */
+    function createAuction(address _auctioneer) external {
+        require(owner == msg.sender, "Only the owner decides the auctioneer");
+        require(auctionStatus == AuctionStatus.NEW, "Too late to decide");
+        auctionStatus = AuctionStatus.ALIVE;
+        auctioneer = _auctioneer;
+        activationTime = block.number;
+        emit AuctionBegins(startPrice, reservePrice, duration)
+    }
+
+    /*
+     * This method allows to create the auction, notify the interested bidders 
+     * and put the auction in grace period. The auctioneer is not passed so 
+     * it is set to the owner himself
+     */
+    function createAuction() external {
+        require(owner == msg.sender, "Only the owner decides the auctioneer");
+        require(auctionStatus == AuctionStatus.NEW, "Too late to decide");
+        auctionStatus = AuctionStatus.ALIVE;
+        activationTime = block.number;
+        auctioneer = owner;
+        emit AuctionBegins(startPrice, reservePrice, duration)
     }
 
     /*
@@ -54,12 +89,12 @@ contract DutchAuction {
      * moment, but the timing check is always correct.
      */
     function bid() external payable returns (bool) {
-        require(!ended, "Sorry, the auction has ended");
+        require(auctionStatus == AuctionStatus.ALIVE, "Sorry, wrong phase");
         uint nowT = block.number;
         require(nowT - activationTime >= graceTime, "Wait until the grace time is over");
         if(nowT - activationTime > duration + graceTime) {
             // The auction has ended, but no one made a bid in time
-            ended = true;
+            auctionStatus = AuctionStatus.ENDED;
             emit AuctionEnded(winner, 0);
             // I refund the bidder account and return false to signal that
             // the transaction failed
@@ -74,7 +109,7 @@ contract DutchAuction {
         // I have computed the current price, but I have to check that enough ether was passed
         require(msg.value >= currentPrice, "Sorry, current price is higher");
         // At this point I'm sure that I had enough money to end the auction
-        ended = true;
+        auctionStatus = AuctionStatus.ENDED;
         winner = msg.sender;
         emit AuctionEnded(winner, currentPrice);
         owner.transfer(currentPrice);
@@ -85,17 +120,18 @@ contract DutchAuction {
 
     /*
      * This method simply checks if the auction is over and it can only be
-     * called by the auction owner
+     * called by the auctioneer
      */
     function checkIfAuctionEnded() external returns (bool) {
-        require(msg.sender == owner, "Sorry, only the owner has access to this method");
+        require(msg.sender = auctioneer, "Sorry, only the auctioneer has access to this method");
 
-        if(ended) return true;
+        if(auctionStatus == AuctionStatus.ENDED) return true;
+        if(auctionStatus == AuctionStatus.NEW) return false;
 
         uint nowT = block.number;
         if(nowT - activationTime > duration + graceTime) {
             // The auction has ended, so no one won
-            ended = true;
+            auctionStatus = AuctionStatus.ENDED;
             emit AuctionEnded(winner, 0);
             return true;
         }
@@ -121,7 +157,7 @@ contract DutchAuction {
     }
 
     function getWinner() external view returns (address) {
-        require(!ended, "No winner yet, the auction has not ended");
+        require(auctionStatus == AuctionStatus.ENDED, "No winner yet, the auction has not ended");
         return winner;
     }
 
@@ -129,12 +165,28 @@ contract DutchAuction {
         return owner;
     }
 
+    function getAuctioneer() external view returns (address) {
+        return auctioneer;
+    }
+
     function getDuration() external view returns (uint) {
         return duration;
     }
 
     function isEnded() external view returns (bool) {
-        return ended;
+        return auctionStatus == AuctionStatus.ENDED;
+    }
+
+    function getCurrentPhase() external view returns (string memory) {
+        if(auctionStatus == AuctionStatus.NEW)
+            return "Auction created but not started";
+        else if(auctionStatus == AuctionStatus.ALIVE) {
+            if(block.number - activationTime >= graceTime)
+                return "Commitment period";
+            else 
+                return "Grace period";
+        } else
+            return "Auction is ended";
     }
 
     function getDecreaseLogicDescription() external view returns (string memory) {
