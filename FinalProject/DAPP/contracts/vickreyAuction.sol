@@ -32,7 +32,7 @@ contract VickreyAuction {
     // addresses related to the contracts
     address payable private winner;
     address payable private owner;
-    address payable private auctioneer;
+    address private auctioneer;
 
     // prices
     uint private reservePrice;
@@ -94,8 +94,8 @@ contract VickreyAuction {
 
     // New methods, see changelog in the report
     /*
-     * This method allows to create the auction, notify the interested bidders 
-     * and put the auction in grace period. It explicitely takes the auctioneer 
+     * This method allows to create the auction, notify the interested bidders
+     * and put the auction in grace period. It explicitely takes the auctioneer
      * as a parameter to model also auction where the owner is not the auctioneer
      */
     function createAuction(address _auctioneer) external {
@@ -104,12 +104,12 @@ contract VickreyAuction {
         auctionStatus = AuctionStatus.GRACE;
         auctioneer = _auctioneer;
         activationTime = block.number;
-        emit AuctionBegins(reservePrice, depositRequirement, graceTime)
+        emit AuctionBegins(reservePrice, depositRequirement, graceTime);
     }
 
     /*
-     * This method allows to create the auction, notify the interested bidders 
-     * and put the auction in grace period. The auctioneer is not passed so 
+     * This method allows to create the auction, notify the interested bidders
+     * and put the auction in grace period. The auctioneer is not passed so
      * it is set to the owner himself
      */
     function createAuction() external {
@@ -118,7 +118,7 @@ contract VickreyAuction {
         auctionStatus = AuctionStatus.GRACE;
         activationTime = block.number;
         auctioneer = owner;
-        emit AuctionBegins(reservePrice, depositRequirement, graceTime)
+        emit AuctionBegins(reservePrice, depositRequirement, graceTime);
     }
 
     /* ------------ below is the only provided modifier ---------------- */
@@ -138,7 +138,7 @@ contract VickreyAuction {
     modifier changeAuctionPhase(uint nowT) {
 
         // I have to check for the state only if the auction is not ended
-        if(auctionStatus < AuctionStatus.ENDED && auctionStatus != NEW) {
+        if(auctionStatus < AuctionStatus.ENDED && auctionStatus != AuctionStatus.NEW) {
 
             uint timeDiff = nowT - activationTime;
             // I use the integer below the enum to compute the number of phases passed

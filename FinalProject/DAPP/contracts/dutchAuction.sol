@@ -20,9 +20,8 @@ contract DutchAuction {
     address payable private owner;
     address private auctioneer;
     address payable private winner;
-    
+
     AuctionStatus auctionStatus;
-    
     // prices
     uint private reservePrice;
     uint private startPrice;
@@ -42,7 +41,7 @@ contract DutchAuction {
                 uint _duration,
                 DecreaseLogic _decreaseLogic
             ) public {
-        require(_startPrice > _reservePrice, "Sorry, wrong arguments, check prices);
+        require(_startPrice > _reservePrice, "Sorry, wrong arguments, check prices");
 
         startPrice = _startPrice;
         reservePrice = _reservePrice;
@@ -55,8 +54,8 @@ contract DutchAuction {
 
     // New methods, see changelog in the report
     /*
-     * This method allows to create the auction, notify the interested bidders 
-     * and put the auction in grace period. It explicitely takes the auctioneer 
+     * This method allows to create the auction, notify the interested bidders
+     * and put the auction in grace period. It explicitely takes the auctioneer
      * as a parameter to model also auction where the owner is not the auctioneer
      */
     function createAuction(address _auctioneer) external {
@@ -65,12 +64,12 @@ contract DutchAuction {
         auctionStatus = AuctionStatus.ALIVE;
         auctioneer = _auctioneer;
         activationTime = block.number;
-        emit AuctionBegins(startPrice, reservePrice, duration)
+        emit AuctionBegins(startPrice, reservePrice, duration);
     }
 
     /*
-     * This method allows to create the auction, notify the interested bidders 
-     * and put the auction in grace period. The auctioneer is not passed so 
+     * This method allows to create the auction, notify the interested bidders
+     * and put the auction in grace period. The auctioneer is not passed so
      * it is set to the owner himself
      */
     function createAuction() external {
@@ -79,7 +78,7 @@ contract DutchAuction {
         auctionStatus = AuctionStatus.ALIVE;
         activationTime = block.number;
         auctioneer = owner;
-        emit AuctionBegins(startPrice, reservePrice, duration)
+        emit AuctionBegins(startPrice, reservePrice, duration);
     }
 
     /*
@@ -123,7 +122,7 @@ contract DutchAuction {
      * called by the auctioneer
      */
     function checkIfAuctionEnded() external returns (bool) {
-        require(msg.sender = auctioneer, "Sorry, only the auctioneer has access to this method");
+        require(msg.sender == auctioneer, "Sorry, only the auctioneer has access to this method");
 
         if(auctionStatus == AuctionStatus.ENDED) return true;
         if(auctionStatus == AuctionStatus.NEW) return false;
@@ -183,7 +182,7 @@ contract DutchAuction {
         else if(auctionStatus == AuctionStatus.ALIVE) {
             if(block.number - activationTime >= graceTime)
                 return "Commitment period";
-            else 
+            else
                 return "Grace period";
         } else
             return "Auction is ended";
