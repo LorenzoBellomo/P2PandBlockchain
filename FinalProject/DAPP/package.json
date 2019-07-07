@@ -9,6 +9,7 @@
   "dependencies": {
     "ajax": "0.0.4",
     "lite-server": "^2.5.3",
+    "truffle": "^5.0.26",
     "web3": "^1.0.0-beta.55"
   },
   "devDependencies": {},
