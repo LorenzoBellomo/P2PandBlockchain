@@ -14,31 +14,36 @@ App = {
             App.web3Provider = new Web3.providers.HttpProvider(App.url); // <==
             web3 = new Web3(App.web3Provider);
         }
-        return App.initContract();
     },
-    initContract: function() {
+    initVickrey: function() {
         // Load content's abstractions
-        $.getJSON("MyContract.json").done(function(c) {
-            App.contracts["MyContract"] = TruffleContract(c);
-            App.contracts["MyContract"].setProvider(App.web3Provider);
-            return App.listenForEvents();
+        $.getJSON("VickreyAuction.json").done(function(c) {
+            App.contracts["VickreyAuction"] = TruffleContract(c);
+            App.contracts["VickreyAuction"].setProvider(App.web3Provider);
         });
+        return App.listenForEvents();
     },
     listenForEvents: function() {
-        App.contracts["MyContract"].deployed().then(async (instance) => {
+        App.contracts["VickreyAuction"].deployed().then(async (instance) => {
             web3.eth.getBlockNumber(function (error, block) {
             // click is the Solidity event
-            instance.click().on('data', function (event) {
+            instance.EVENTNAME().on('data', function (event) {
                 $("#eventId").html("Event catched!");
                     console.log("Event catched");
                     console.log(event);
                     // If event has parameters: event.returnValues.valueName
+                    document.write("WRITE TO DOM");
                 });
             });
         });
-        return App.render();
+        return App.renderVickrey();
     },
-    render: function() { /* Render page */ }
+    renderVickrey: function() { 
+        /* Render page */ 
+    },
+    renderDutch: function() {
+        
+    }
 }
 
 // Call init whenever the window loads
