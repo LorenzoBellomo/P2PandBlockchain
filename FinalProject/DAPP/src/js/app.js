@@ -39,10 +39,22 @@ App = {
         return App.renderVickrey();
     },
     renderVickrey: function() { 
-        /* Render page */ 
+        /* Render page */
+        App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
+            $(function() {
+                $("#activeMode").html("VickreyAuction");
+                $(".AuctionChoice").remove();
+            });
+        });
     },
     renderDutch: function() {
-        
+        /* Render page */
+        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
+            $(function() {
+                $("#activeMode").html("DutchAuction");
+                $(".AuctionChoice").remove();
+            });         
+        });
     }
 }
 

@@ -3,19 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <title>DApp</title>
-    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.34/dist/"></script>
-    <script src="https://github.com/trufflesuite/truffle/packages/truffle-contract#develop"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
+    <script type="text/javascript" src="js/App.js"></script>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <!-- Our App script -->
-    <script src="js/app.js"></script>
 </head>
 <body class="grey lighten-3">
     <!-- START NAVBAR -->
@@ -26,10 +16,18 @@
                 <img src="/assets/logo.png" width="30" height="30" class="d-inline-block align-top" alt="">
                 Smart Auction DAPP
             </a>
+            <h1 id="activeMode">Choose your auction type please</h1>
+            <button class="AuctionChoice btn-primary" onclick="App.renderVickrey()">Vickrey</button>
+            <button class="AuctionChoice btn-primary" onclick="App.renderDutch()">Dutch</button>
         </div>
     </nav>
     <!-- END NAVBAR -->
-    <h1 >AAAAAAAAAAAAAAAAAAAAAAAAa</h1>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js@1.0.0-beta.34/dist/"></script>
+    <script src="https://github.com/trufflesuite/truffle/packages/truffle-contract#develop"></script>
 
 </body>
 
