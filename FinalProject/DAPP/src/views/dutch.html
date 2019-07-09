@@ -1,11 +1,17 @@
+
 <div class="container">
     <div class='page'>
         <div class='role'><h4>Auctioneer</h4></div>
         <div class="operations">
-                <div class="input-group mb-3">
-                    <button class="btn btn-outline-primary" type="button" id="button-addon1">Change Auction Phase</button>
-                </div>
+            <div class="input-group mb-3">
+                <button class="btn btn-outline-primary" type="button" id="button-addon1">Change Auction Phase</button>
+            </div>
         </div>
+        <p>
+            <img id="newSpam" src="assets/new.png" height="30" style="display: none"/>
+            LatestEvent: 
+            <strong id='eventSink'></strong> 
+        </p>
         <!--<div class='content'>Content</div>
         <div class='footer'>Footer</div>-->
     </div>
@@ -25,6 +31,11 @@
                 <button class="btn btn-outline-primary" type="button" id="button-addon1">Finalize</button>
             </div>
         </div>
+        <p>
+            <img id="newSpam" src="assets/new.png" height="30" style="display: none"/>
+            LatestEvent: 
+            <strong id='eventSink'></strong> 
+        </p>
         <!--<div class='content'>Content</div>
         <div class='footer'>Footer</div>-->
     </div>
@@ -33,7 +44,7 @@
         <div class="operations">
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
-                    <button class="btn btn-outline-primary" type="button" id="button-addon1">Bid</button>
+                    <button class="btn btn-outline-primary" type="button" id="button-addon1" onClick="App.bid()">Bid</button>
                 </div>
                 <input type="text" class="form-control" placeholder="hash" aria-label="Username" aria-describedby="basic-addon1">
             </div>
@@ -44,6 +55,11 @@
                 <button class="btn btn-outline-primary" type="button" id="button-addon1">Open</button>
             </div>
         </div>
+        <p>
+            <img id="newSpam" src="assets/new.png" height="30" style="display: none"/>
+            LatestEvent: 
+            <strong id='eventSink'></strong> 
+        </p> 
         <!--<div class='content'>Content</div>
         <div class='footer'>Footer</div>-->
     </div>
@@ -54,15 +70,15 @@
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">Getter methods</a>
             <div class="dropdown-menu">
                 <div class="dropdown-header">TIME RELATED</div>
-                <a href="#" class="dropdown-item">Current Phase</a>
-                <a href="#" class="dropdown-item">Grace Period Duration</a>
-                <a href="#" class="dropdown-item">Commitment Phase Duration</a>
-                <a href="#" class="dropdown-item">Withdrawal Phase Duration</a>
-                <a href="#" class="dropdown-item">Opening Phase Duration</a>
+                <a href="#" class="dropdown-item" onClick="App.get(1)">Current Phase</a>
+                <a href="#" class="dropdown-item" onClick="App.get(2)">Grace Period Duration</a>
+                <a href="#" class="dropdown-item" onClick="App.get(3)">Commitment Phase Duration</a>
+                <a href="#" class="dropdown-item" onClick="App.get(4)">Withdrawal Phase Duration</a>
+                <a href="#" class="dropdown-item" onClick="App.get(5)">Opening Phase Duration</a>
                 <div class="dropdown-header">EXAMPLE</div>
-                <a href="#" class="dropdown-item" onClick="$('#getterResult').html('<h3>Ciao</h3>')">Action</a>
+                <a href="#" class="dropdown-item" onClick="App.get(6)">Action</a>
                 <div class="dropdown-header">COMMITMENT</div>
-                <a href="#" class="dropdown-item">Commitment Status (owner only)</a>
+                <a href="#" class="dropdown-item" onClick="App.get(7)">Commitment Status (owner only)</a>
             </div>
             <div id="getterResult"></div>
         </div>
