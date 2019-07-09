@@ -1,3 +1,50 @@
 body { 
-    padding-top: 65px; 
+    padding-top: 75px; 
+}
+
+.navbar {
+    background-color: rgb(224, 224, 224);
+}
+
+.container {
+    display: flex;
+}
+
+.container > div {
+    flex: 1; /*grow*/
+}
+
+.role {
+    height: 50px;    
+}
+  
+.operations {
+    height: 200px;
+}
+  
+.content {
+    height: 200px;
+}
+  
+.footer {
+    height: 200px;
+}
+
+.dropdown {
+    padding-left: 25px;
+}
+
+.liveStats {
+    border: 1px solid black;
+    padding-top: 20px;
+    padding-left: 20px;
+    position:relative
+}
+
+.refreshButton {
+    margin-top: 1px;
+    margin-right: 2px;
+    position: absolute;
+    top: 0;
+    right: 0;
 }

@@ -40,21 +40,23 @@ App = {
     },
     renderVickrey: function() { 
         /* Render page */
-        App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
+        //App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
             $(function() {
                 $("#activeMode").html("VickreyAuction");
                 $(".AuctionChoice").remove();
+                $('#auctionType').load("views/vickrey.html")
             });
-        });
+        //});
     },
     renderDutch: function() {
         /* Render page */
-        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
+        //App.contracts["DutchAuction"].deployed().then(async(instance) =>{
             $(function() {
                 $("#activeMode").html("DutchAuction");
                 $(".AuctionChoice").remove();
+                $('#auctionType').load("views/dutch.html")
             });         
-        });
+        //});
     }
 }
 
