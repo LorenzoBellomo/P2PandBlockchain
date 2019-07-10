@@ -347,6 +347,10 @@ contract VickreyAuction {
         return reservePrice;
     }
 
+    function getDeposit() external view returns (uint) {
+        return depositRequirement;
+    }
+
     function getCurrentTopPayment() external view returns (uint) {
         return topPayment;
     }

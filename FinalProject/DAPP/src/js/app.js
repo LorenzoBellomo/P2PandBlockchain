@@ -119,26 +119,68 @@ App = {
     },
     renderVickrey: function() { 
         /* Render page */
-        App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
+        //App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
             $(function() {
                 $("#activeMode").html("VickreyAuction");
                 $(".AuctionChoice").remove();
                 $('#auctionType').load("views/vickrey.html")
             });
-        });
+        //});
     },
     renderDutch: function() {
         /* Render page */
-        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
+        //App.contracts["DutchAuction"].deployed().then(async(instance) =>{
             $(function() {
                 $("#activeMode").html("DutchAuction");
                 $(".AuctionChoice").remove();
                 $('#auctionType').load("views/dutch.html")
             });         
-        });
+        //});
     },
     getV: function(code) {
         App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
+            let out;
+            switch(code){
+                case 1: 
+                    instance.getCurrentPhase().then(result => {
+                        out = result;
+                    });
+                break;
+                case 2: 
+                    out = "Grace: ";
+                    instance.getGraceTimeDuration().then(result => {
+                        out += result;
+                    });
+                    instance.getCommitmentDuration().then(result => {
+                        out += ", Commitment: " + result;
+                    });
+                    instance.getWithdrawalDuration().then(result => {
+                        out += ", Withdrawal: " + result;
+                    });
+                    instance.getOpeningDuration().then(result => {
+                        out = ", Opening: " + result;
+                    });
+                break;
+                case 3: 
+                // TODO 
+                    instance.getCommitmentStatus(PARAM).then(result => {
+                        out = result;
+                    });
+                break;
+                case 4:
+                    instance.getReservePrice().then(result => {
+                        out = "Reserve Price is " + result;
+                    });
+                    instance.getDeposit().then(result => {
+                        out += " and deposit is " + result;
+                    });
+                break;
+            }
+            $("#getterResult").html(out);
+        })
+    },
+    getD: function(code) {
+        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
             let out;
             switch(code){
                 case 1: 
@@ -175,10 +217,52 @@ App = {
             $("#getterResult").html(out);
         })
     },
-    getD: function(code) {
+    callerV: function(code) {
         switch(code){
-            case 1: 
+            case 1:
+                //Change auction phase
+            break;
+            case 2: 
+                // create auction (parameter)
+            break;
+            case 3:
+                // Finalize
+            break;
+            case 4:
+                // bid (param)
+            break;
+            case 5:
+                // withdraw
+            break;
+            case 6:
+                // open
+            break;
         }
+    },
+    callerD: function(code) {
+        switch(code){
+            case 1:
+                // create auction (parameter)
+            break;
+            case 2: 
+                // check auction ended
+            break;
+            case 3:
+                // bid 
+            break;
+        }
+    },
+    refreshV: function(){
+        //TODO
+        // currentWinner
+        // ownerAddr
+        // AuctAddr
+    },
+    refreshD: function() {
+        //TODO
+        // currentPrice
+        // ownerAddr
+        // AuctAddr
     }
 }
 
