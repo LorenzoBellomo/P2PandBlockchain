@@ -1,5 +1,6 @@
 App = {
     contracts: {}, // Store contract abstractions
+    hashesAndNonces: {},
     web3Provider: null, // Web3 provider
     url: 'http://localhost:7545', // Url for web3
     init: function() { return App.initWeb3(); },
@@ -26,7 +27,6 @@ App = {
     listenForEventsV: function() {
         App.contracts["VickreyAuction"].deployed().then(async (instance) => {
             web3.eth.getBlockNumber(function (error, block) {
-                // click is the Solidity event
                 instance.AuctionBegins().on('data', function (event) {
                     spamButton();
                     console.log("Event catched");
@@ -119,23 +119,23 @@ App = {
     },
     renderVickrey: function() { 
         /* Render page */
-        //App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
+        App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
             $(function() {
                 $("#activeMode").html("VickreyAuction");
                 $(".AuctionChoice").remove();
                 $('#auctionType').load("views/vickrey.html")
             });
-        //});
+        });
     },
     renderDutch: function() {
         /* Render page */
-        //App.contracts["DutchAuction"].deployed().then(async(instance) =>{
+        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
             $(function() {
                 $("#activeMode").html("DutchAuction");
                 $(".AuctionChoice").remove();
                 $('#auctionType').load("views/dutch.html")
             });         
-        //});
+        });
     },
     getV: function(code) {
         App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
@@ -143,7 +143,7 @@ App = {
             switch(code){
                 case 1: 
                     instance.getCurrentPhase().then(result => {
-                        out = result;
+                        out = "Phase: " + result;
                     });
                 break;
                 case 2: 
@@ -162,17 +162,16 @@ App = {
                     });
                 break;
                 case 3: 
-                // TODO 
-                    instance.getCommitmentStatus(PARAM).then(result => {
-                        out = result;
+                    instance.getCommitmentStatus().then(result => {
+                        out = "Commitment status: " + result;
                     });
                 break;
                 case 4:
                     instance.getReservePrice().then(result => {
-                        out = "Reserve Price is " + result;
+                        out = "Reserve Price is: " + result;
                     });
                     instance.getDeposit().then(result => {
-                        out += " and deposit is " + result;
+                        out += " and deposit is: " + result;
                     });
                 break;
             }
@@ -185,32 +184,30 @@ App = {
             switch(code){
                 case 1: 
                     instance.getCurrentPhase().then(result => {
-                        out = result;
+                        out = "Phase: " + result;
                     });
                 break;
                 case 2: 
-                    instance.getGraceTimeDuration().then(result => {
-                        out = result;
+                    instance.getDuration().then(result => {
+                        out = "Duration: " + result;
                     });
                 break;
                 case 3: 
-                    instance.getCommitmentDuration().then(result => {
-                        out = result;
+                    instance.getStartPrice().then(result => {
+                        out = "Start price is " + result;
+                    });
+                    instance.getReservePrice().then(result => {
+                        out += " and reserve is " + result;
                     });
                 break;
                 case 4: 
-                    instance.getWithdrawalDuration().then(result => {
-                        out = result;
+                    instance.getCurrentPrice().then(result => {
+                        out = "Current price: " + result;
                     });
                 break;
                 case 5: 
-                    instance.getOpeningDuration().then(result => {
-                        out = result;
-                    });
-                break;
-                case 1: 
-                    instance.getCurrentPhase().then(result => {
-                        out = result;
+                    instance.getDecreaseLogicDescription().then(result => {
+                        out = "Decrease logic is " + result;
                     });
                 break;
             }
@@ -218,28 +215,55 @@ App = {
         })
     },
     callerV: function(code) {
+        let out;
         switch(code){
             case 1:
-                //Change auction phase
+                instance.updateCurrentPhase().then(result => {
+                    out = result;
+                });
             break;
-            case 2: 
-                // create auction (parameter)
+            case 2:
+                instance.createAuction($("createInput")).then(result => {
+                    out = result;
+                });
             break;
             case 3:
-                // Finalize
+                instance.finalize().then(result => {
+                    out = result;
+                });
             break;
             case 4:
-                // bid (param)
+                addr = web3.eth.accounts[0];
+                amount = $("valueIn");
+                nonce = Math.floor(Math.random() * 10000);
+                instance.getKeccak(nonce, amount).then(result => {
+                    hash = result;
+                });
+                App.hashesAndNonces[addr] = [hash, nonce];
+                instance.bid(hash, {from: addr, gas: 3000000, value: amount}).then(result => {
+                    out = result;
+                });
             break;
             case 5:
                 // withdraw
+                instance.withdraw({from: web3.eth.accounts[0]}).then(result => {
+                    out = result;
+                });
             break;
             case 6:
-                // open
+                addr = web3.eth.accounts[0];
+                hash = App.hashesAndNonces[addr][0];
+                nonce = App.hashesAndNonces[addr][1];
+                remove(App.hashesAndNonces[addr]);
+                instance.open(nonce, {from: addr}).then(result => {
+                    out = result;
+                });
             break;
         }
+        $("#methodResult").html(out);
     },
     callerD: function(code) {
+        let out;
         switch(code){
             case 1:
                 // create auction (parameter)
@@ -251,6 +275,7 @@ App = {
                 // bid 
             break;
         }
+        $("#methodResult").html(out);
     },
     refreshV: function(){
         //TODO
