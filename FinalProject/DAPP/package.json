@@ -8,8 +8,10 @@
   },
   "dependencies": {
     "ajax": "0.0.4",
+    "jquery": "^3.4.1",
     "lite-server": "^2.5.3",
     "truffle": "^5.0.26",
+    "truffle-contract": "^4.0.23",
     "web3": "^1.0.0-beta.55"
   },
   "devDependencies": {},

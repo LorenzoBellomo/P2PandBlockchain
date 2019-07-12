@@ -148,8 +148,8 @@ contract DutchAuction {
     }
 
     function getCurrentPrice() external view returns (uint) {
-        require(block.number - activationTime >= graceTime && block.number - activationTime < duration + graceTime,
-                "Sorry, not yet in the auction main phase");
+        require(auctionStatus == AuctionStatus.ALIVE && block.number - activationTime >= graceTime &&
+                block.number - activationTime < duration + graceTime, "Sorry, not yet in the auction main phase");
         uint currentPrice = decreaseLogic.
             computeCurrentPrice(activationTime + graceTime, duration, startPrice, block.number, reservePrice);
         return currentPrice;

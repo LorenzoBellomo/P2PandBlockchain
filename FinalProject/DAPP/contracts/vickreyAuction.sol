@@ -380,7 +380,9 @@ contract VickreyAuction {
     }
 
     function getCurrentPhase() external view returns (string memory) {
-        if(auctionStatus == AuctionStatus.GRACE)
+        if(auctionStatus == AuctionStatus.NEW)
+            return "New inactive auction";
+        else if(auctionStatus == AuctionStatus.GRACE)
             return "Grace period";
         else if(auctionStatus == AuctionStatus.COMMITMENT)
             return "Commitment period";
