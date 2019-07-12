@@ -148,39 +148,47 @@ App = {
     },
     callerV: function(code) {
         App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
-            addr = web3.eth.accounts[0];
-            let out;
+            var accounts =  await web3.eth.getAccounts();
+            addr = accounts[0];
             switch(code){
                 case 1:
-                    instance.updateCurrentPhase({from: addr}).then(result => {
-                        out = result;
+                    gasLimit = $("#gasLimit").val();
+                    instance.updateCurrentPhase({from: addr, gas: gasLimit}).then(result => {
+                        console.log(result);
+                        $("#methodResult").html("Success");
                     });
                 break;
                 case 2:
-                    instance.createAuction($("createInput"), {from: addr}).then(result => {
+                    auct = $("createInput").val();
+                    instance.createAuction(auct, {from: addr}).then(result => {
                         out = result;
+                        $("#methodResult").html(out);
                     });
                 break;
                 case 3:
                     instance.finalize({from: addr}).then(result => {
                         out = result;
+                        $("#methodResult").html(out);
                     });
                 break;
                 case 4:
                     amount = $("valueIn");
+                    gasLimit = $("gasLimit");
                     nonce = Math.floor(Math.random() * 10000);
                     instance.getKeccak(nonce, amount).then(result => {
                         hash = result;
-                    });
-                    App.hashesAndNonces[addr] = [hash, nonce];
-                    instance.bid(hash, {from: addr, gas: 3000000, value: amount}).then(result => {
-                        out = result;
+                        App.hashesAndNonces[addr] = [hash, nonce];
+                        instance.bid(hash, {from: addr, gas: gasLimit, value: amount}).then(result => {
+                            out = result;
+                            $("#methodResult").html(out);
+                        });
                     });
                 break;
                 case 5:
                     // withdraw
                     instance.withdraw({from: addr}).then(result => {
                         out = result;
+                        $("#methodResult").html(out);
                     });
                 break;
                 case 6:
@@ -189,25 +197,25 @@ App = {
                     remove(App.hashesAndNonces[addr]);
                     instance.open(nonce, {from: addr}).then(result => {
                         out = result;
+                        $("#methodResult").html(out);
                     });
                 break;
             }
-            $("#methodResult").html(out);
         });
     },
     refreshV: function(){
         var addr = web3.eth.accounts[0];
         App.contracts["VickreyAuction"].deployed().then(async(instance) => {
-            instance.getCurrentWinner({from: addr}).then(result => {
+            instance.getCurrentWinner().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
                     $("#currentWinner").html("None");
                 else
                     $("#currentWinner").html(result);
             });
-            instance.getOwner({from: addr}).then(result => {
+            instance.getOwner().then(result => {
                     $("#ownerAddr").html(result);
             });
-            instance.getAuctioneer({from: addr}).then(result => {
+            instance.getAuctioneer().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
                     $("#auctAddr").html("None");
                 else
@@ -310,15 +318,14 @@ App = {
         })
     },
     refreshD: function() {
-        var addr = web3.eth.accounts[0];
         App.contracts["DutchAuction"].deployed().then(async(instance) => {
-            instance.getCurrentPrice({from: addr}).then(result => {
+            instance.getCurrentPrice().then(result => {
                 $("#currentPrice").html(result.toNumber());
             });
-            instance.getOwner({from: addr}).then(result => {
+            instance.getOwner().then(result => {
                     $("#ownerAddr").html(result);
             });
-            instance.getAuctioneer({from: addr}).then(result => {
+            instance.getAuctioneer().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
                     $("#auctAddr").html("None");
                 else
