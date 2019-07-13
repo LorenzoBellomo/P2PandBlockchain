@@ -7,17 +7,15 @@
                 <button class="btn btn-outline-primary" type="button" id="button-addon1" onClick="App.callerD(2)">Check If Auction Ended</button>
             </div>
         </div>
-        <!--<div class='content'>Content</div>
-        <div class='footer'>Footer</div>-->
     </div>
     <div class='page'>
         <div class='role'><h4>Owner</h4></div>
         <div class="operations">
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
-                        <button class="btn btn-outline-primary" type="button" id="button-addon1" onClick="App.callerD(1)">Create Auction</button>
+                    <button class="btn btn-outline-primary" type="button" id="button-addon1" onClick="App.callerD(1)">Create Auction</button>
                 </div>
-                <input type="text" class="form-control" placeholder="Auctioneer address" aria-label="Username" aria-describedby="basic-addon1">
+                <input id="auctAddrIn" type="text" class="form-control" placeholder="Auctioneer address" aria-label="Username" aria-describedby="basic-addon1">
             </div>
         </div>
     </div>
@@ -28,6 +26,7 @@
                 <div class="input-group-prepend">
                     <button class="btn btn-outline-primary" type="button" id="button-addon1" onClick="App.callerD(3)">Bid</button>
                 </div>
+                <input id="bidAmountIn" type="text" class="form-control" placeholder="Bid amount (wei)" aria-label="Username" aria-describedby="basic-addon1">
             </div>
         </div>
     </div>
@@ -58,7 +57,6 @@
                 <div class="form-group col-xs-3">
                     Gas Limit (wei):
                     <input type="text" class="form-control" value="3000000" aria-label="Username" aria-describedby="basic-addon1" id="gasLimit">
-                    (wei)
                 </div>
             </div>
         </div>

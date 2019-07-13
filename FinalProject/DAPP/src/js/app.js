@@ -204,7 +204,6 @@ App = {
         });
     },
     refreshV: function(){
-        var addr = web3.eth.accounts[0];
         App.contracts["VickreyAuction"].deployed().then(async(instance) => {
             instance.getCurrentWinner().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
@@ -264,19 +263,42 @@ App = {
         });
     },
     callerD: function(code) {
-        let out;
-        switch(code){
-            case 1:
-                // create auction (parameter)
-            break;
-            case 2: 
-                // check auction ended
-            break;
-            case 3:
-                // bid 
-            break;
-        }
-        $("#methodResult").html(out);
+        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
+            var accounts =  await web3.eth.getAccounts();
+            addr = accounts[0];
+            gasLimit = $("#gasLimit").val();
+            switch(code){
+                case 1:
+                    auctAddr = $("#auctAddrIn").val();
+                    instance.createAuction(auctAddr, {from: addr, gas: gasLimit}).then(result => {
+                        console.log(result);
+                        $("#methodResult").html("Success");
+                    }).catch(function(error) {
+                        console.log(error);
+                        $("#methodResult").html("<p style='color:red'>Error</p>");
+                    });
+                break;
+                case 2: 
+                    instance.checkIfAuctionEnded({from: addr, gas: gasLimit}).then(result => {
+                        console.log(result);
+                        $("#methodResult").html("Success");
+                    }).catch(function(error) {
+                        console.log(error);
+                        $("#methodResult").html("<p style='color:red'>Error</p>");
+                    });
+                break;
+                case 3:
+                    amount = $("#bidAmountIn").val();
+                    instance.bid({from: addr, gas: gasLimit, value: amount}).then(result => {
+                        console.log(result);
+                        $("#methodResult").html("Success");
+                    }).catch(function(error) {
+                        console.log(error);
+                        $("#methodResult").html("<p style='color:red'>Error</p>");
+                    });
+                break;
+            }
+        });
     },
     getD: function(code) {
         App.contracts["DutchAuction"].deployed().then(async(instance) =>{
@@ -306,6 +328,8 @@ App = {
                     instance.getCurrentPrice().then(result => {
                         out = "Current price is " + result;
                         $("#getterResult").html(out);
+                    }).catch(function() {
+                        $("#getterResult").html("<p style=\"color:red;\">Wrong phase to call current Price</p>");
                     });
                 break;
                 case 5: 
@@ -321,6 +345,8 @@ App = {
         App.contracts["DutchAuction"].deployed().then(async(instance) => {
             instance.getCurrentPrice().then(result => {
                 $("#currentPrice").html(result.toNumber());
+            }).catch(function() {
+                $("#currentPrice").html("None");
             });
             instance.getOwner().then(result => {
                     $("#ownerAddr").html(result);

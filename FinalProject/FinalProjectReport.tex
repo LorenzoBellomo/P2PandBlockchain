@@ -30,9 +30,10 @@ The project is organized as follows:
 	\item \emph{Root folder}: It contains only the report file and a folder DAPP, all the code is in this folder.
 	\item \emph{DAPP folder}: It contains the configurations files needed (\emph{bs-config.json} for lite-server, \emph{package.json} for node, \emph{truffle-config.json} for truffle). It additionaly holds file ropsten.json, which contains the private credentials for ropsten deployment. Then other folders are explained just in the next points.
 	\item \emph{contracts, migrations, test and build}: Truffle related folders. They are compulsory when dealing with truffle projects. Also, at this level, the build folder is generated.
-	\item \emph{node\_modules and src}: Folders related to node and the front-end part. The \emph{src} folder contains some \emph{.css} files (bootstrap) in order to improve the clarity of the web page. 
-	\item \emph{index.html}:
-	\item \emph{app.js}:
+	\item \emph{node\_modules and src}: Folders related to node and the front-end part. The \emph{src} folder contains some \emph{.css} files (bootstrap).
+	\item \emph{index.html}: It only contains the view for the top navbar in the web page, and the two buttons used to choose the auction to render.
+	\item \emph{views folder}: It contains \emph{vickrey.html} and \emph{dutch.html}, which are the files needed to render the auctions.
+	\item \emph{js/app.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and manages the interface towards the contracts.
 \end{itemize}
 
 
@@ -48,7 +49,17 @@ This section contains all the modifications applied to the delivered Final Term 
 \end{itemize}
 
 \section*{Main Project Choices}
-	
+Below are listed the main project choices, together with an explanation regarding the reasoning behind those ones.
+\begin{itemize}
+	\item \emph{One HTML view}: The main choice is the one to collapse the three views (auctioneer, owner and bidder) in one HTML page. Technically this is incorrect (because of course every role should have its own customized web view), but this strongly simplifies testing and gives a broader view of the auction as a whole. This choice was taken mainly due to the fact that the setup code is identical for all the roles.
+	\item \emph{address management}: The first choice (collapsing the html views) strongly implies that it is not possible to fetch the MetaMask address while in initialization phase, and then use the same one for the whole interaction. This means that, for each operation that needs to have an address specified, it has to be fetched from MetaMask, resulting in a (very low) delay. The operations affected are only the main contract ones, as getter methods do not need to specify the address they come from. 
+	\item \emph{HTML view organization}: The web index prompts to the choice between the two implemented auctions (Dutch and Vickrey). After deciding which one to view, the web3 initialization process begins, which ends with the rendering of the appropriate view for the two auctions. The web page is organized in three areas:
+	\begin{itemize}
+		\item \emph{Top area}: Provides all the operations for the three roles of the auction.
+		\item \emph{Bottom Left area}: Provides an interface to call some getter methods from the contract and shows the result of both the main methods from the top area and the getters.
+		\item \emph{Bottom Right area}: Area with some live information about the auction, together with all the events generated from the smart contract.
+	\end{itemize}
+\end{itemize}
 	
 
 \end{document}          
