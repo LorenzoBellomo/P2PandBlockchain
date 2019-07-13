@@ -328,6 +328,11 @@ contract VickreyAuction {
         return keccak256(abi.encodePacked(nonce, amount));
     }
 
+    // check changelog, basically kills this contract
+    function destroyContract() external {
+        selfdestruct(owner);
+    }
+
 
     /* ------------- Getters from now on ------------- */
 

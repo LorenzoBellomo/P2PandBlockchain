@@ -18,6 +18,8 @@ interface DecreaseLogic {
 
     // Description is like a toString of the decrease logic
     function description() external pure returns (string memory);
+
+    function destroy(address payable addr) external;
 }
 
 contract LinearDecreaseLogic is DecreaseLogic {
@@ -39,6 +41,10 @@ contract LinearDecreaseLogic is DecreaseLogic {
 
     function description() external pure returns (string memory) {
         return "Linear";
+    }
+
+    function destroy(address payable addr) external {
+        selfdestruct(addr);
     }
 }
 
@@ -105,6 +111,10 @@ contract ExponentialDecreaseLogic is DecreaseLogic {
     function description() external pure returns (string memory) {
         return "Exponential";
     }
+
+    function destroy(address payable addr) external {
+        selfdestruct(addr);
+    }
 }
 
 contract LogarithmicDecreaseLogic is DecreaseLogic {
@@ -169,5 +179,9 @@ contract LogarithmicDecreaseLogic is DecreaseLogic {
 
     function description() external pure returns (string memory) {
         return "Logarithmic";
+    }
+
+    function destroy(address payable addr) external {
+        selfdestruct(addr);
     }
 }

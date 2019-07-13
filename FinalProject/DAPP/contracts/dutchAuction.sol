@@ -137,6 +137,12 @@ contract DutchAuction {
         return false;
     }
 
+    // Check changelog, this function just kills the contract and the decrease logic
+    function destroyContract() external {
+        decreaseLogic.destroy(owner);
+        selfdestruct(owner);
+    }
+
     /* ------------- Getters from now on ------------- */
 
     function getReservePrice() external view returns (uint) {
@@ -181,7 +187,7 @@ contract DutchAuction {
             return "Auction created but not started";
         else if(auctionStatus == AuctionStatus.ALIVE) {
             if(block.number - activationTime >= graceTime)
-                return "Commitment period";
+                return "The auction is active";
             else
                 return "Grace period";
         } else

@@ -38,7 +38,10 @@
                     <button class="btn btn-outline-primary" type="button" onClick="App.callerV(5)">Withdraw</button>
                 </div>
                 <div class="input-group mb-3">
-                    <button class="btn btn-outline-primary" type="button" onClick="App.callerV(6)">Open</button>
+                    <div class="input-group-prepend">
+                        <button class="btn btn-outline-primary" type="button" onClick="App.callerV(4)">Open</button>
+                    </div>
+                    <input type="text" class="form-control" placeholder="Reserve Price (wei)" aria-label="Username" aria-describedby="basic-addon1" id="valueIn">
                 </div>
             </div>
         </div>
@@ -88,7 +91,7 @@
             </p> 
             <p>
                 Event data: 
-                <strong>None</strong>
+                <strong id="eventData">None</strong>
             </p>
         </div>
     </div>

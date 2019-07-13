@@ -31,65 +31,96 @@ App = {
     listenForEventsV: function() {
         App.contracts["VickreyAuction"].deployed().then(async (instance) => {
             web3.eth.getBlockNumber(function (error, block) {
-                instance.AuctionBegins().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+                instance.AuctionBegins({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("Auction Begun");
+                    $('#eventSink').html("Auction Begins");
+                    $('#eventData').html("Grace Time: " + event.args.graceTime.toNumber() + 
+                                        "<br>Reserve Price: " + event.args.reservePrice.toNumber() +
+                                        "<br>Deposit Requirement: " + event.args.depositRequirement.toNumber());
+                    spamButton();
                 });
-                instance.GraceTimeOver().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.AuctionEnded({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("Grace Time is Over");
+                    $('#eventSink').html("Auction Ended");
+                    $('#eventData').html("Winner: " + event.args.winner + 
+                                        "<br>Amount: " + event.args.amount);
+                    spamButton();
                 });
-                instance.CommitmentOver().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.GraceTimeOver({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("Commitment Phase is Over");
+                    $('#eventSink').html("Grace Time is Over");
+                    $('#eventData').html("Commitment Duration: " + event.args.commitmentDuration.toNumber() + 
+                                        "<br>Reserve Price: " + event.args.reservePrice.toNumber() +
+                                        "<br>Deposit Requirement: " + event.args.depositRequirement.toNumber());
+                    spamButton();
                 });
-                instance.WithdrawalOver().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.CommitmentOver({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("Withdrawal Phase is Over");
+                    $('#eventSink').html("Commitment Phase is Over");
+                    $('#eventData').html("Withdrawal Duration: " + event.args.withdrawalDuration.toNumber() + 
+                                        "<br>Number of bidders: " + event.args.liveBidders.toNumber());                    spamButton();
                 });
-                instance.AuctionEnded().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.WithdrawalOver({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("Auction is Over");
+                    $('#eventSink').html("Withdrawal Phase is Over");
+                    $('#eventData').html("Opening Duration: " + event.args.openingDuration.toNumber() + 
+                                        "<br>Number of bidders " + event.args.liveBidders.toNumber());
+                    spamButton();
                 });
-                instance.NewCommitment().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.NewCommitment({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("There was a new Commitment");
+                    $('#eventSink').html("New Bidder Commitment");
+                    $('#eventData').html("Address: " + event.args.bidder + 
+                                        "<br>Number of bidders: " + event.args.liveBidders.toNumber());
+                    spamButton();
                 });
-                instance.NewWithdrawal().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.NewWithdrawal({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("There was a new Withdrawal");
+                    $('#eventSink').html("There was a withdraw");
+                    $('#eventData').html("Address: " + event.args.withdrawer + 
+                                        "<br>Number of bidders: " + event.args.liveBidders.toNumber());
+                    spamButton();
                 });
-                instance.NewLeader().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.NewLeader({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("There is a new temporary winner");
-                    $("#currentWinner").html(event.returnValues.currentWinner);
+                    $('#eventSink').html("New (temporary) winner");
+                    $('#eventData').html("Current Winner: " + event.args.currentWinner + 
+                                        "<br>Top Payment until now: " + event.args.topPayment.toNumber());
+                    spamButton();
                 });
             });
-            return App.renderVickrey();
+            return App.renderDutch();
         });
     },
     renderVickrey: function() { 
@@ -233,20 +264,27 @@ App = {
     listenForEventsD: function() {
         App.contracts["DutchAuction"].deployed().then(async (instance) => {
             web3.eth.getBlockNumber(function (error, block) {
-                // click is the Solidity event
-                instance.AuctionEnded().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+                instance.AuctionBegins({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("AuctionEnded");
+                    $('#eventSink').html("Auction Begins");
+                    $('#eventData').html("Start Price: " + event.args.startPrice.toNumber() + 
+                                        "<br>Reserve Price: " + event.args.reservePrice.toNumber() +
+                                        "<br>duration: " + event.args.duration.toNumber());
+                    spamButton();
                 });
-                instance.AuctionBegins().on('data', function (event) {
-                    spamButton();
-                    console.log("Event catched");
+
+                instance.AuctionEnded({
+                    fromBlock: 0,
+                    toBlock: 'latest'
+                }, function(error, event) {
                     console.log(event);
-                    // If event has parameters: event.returnValues.valueName
-                    $('#eventSink').value("AuctionBegins");
+                    $('#eventSink').html("Auction Ended");
+                    $('#eventData').html("Winner: " + event.args.winner + 
+                                        "<br>Amount: " + event.args.amount);
+                    spamButton();
                 });
             });
             return App.renderDutch();
@@ -270,13 +308,29 @@ App = {
             switch(code){
                 case 1:
                     auctAddr = $("#auctAddrIn").val();
-                    instance.createAuction(auctAddr, {from: addr, gas: gasLimit}).then(result => {
-                        console.log(result);
-                        $("#methodResult").html("Success");
-                    }).catch(function(error) {
-                        console.log(error);
-                        $("#methodResult").html("<p style='color:red'>Error</p>");
-                    });
+                    if(auctAddr) {
+                        instance.methods['createAuction(address)'](auctAddr, {from: addr, gas: gasLimit}).then(result => {
+                            console.log(result);
+                            $("#methodResult").html("Success");
+                        }).catch(function(error) {
+                            console.log(error);
+                            if((error+"").search(/have the correct nonce/))
+                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
+                            else
+                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                        });
+                    } else {
+                        instance.methods['createAuction()']({from: addr, gas: gasLimit}).then(result => {
+                            console.log(result);
+                            $("#methodResult").html("Success");
+                        }).catch(function(error) {
+                            console.log(error);
+                            if((error+"").search(/have the correct nonce/))
+                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
+                            else
+                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                        });
+                    }
                 break;
                 case 2: 
                     instance.checkIfAuctionEnded({from: addr, gas: gasLimit}).then(result => {
@@ -284,18 +338,27 @@ App = {
                         $("#methodResult").html("Success");
                     }).catch(function(error) {
                         console.log(error);
-                        $("#methodResult").html("<p style='color:red'>Error</p>");
+                        if((error+"").search(/have the correct nonce/))
+                            $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
+                        else
+                            $("#methodResult").html("<p style='color:red'>Error: Forbidden method. Are you the auctioneer?</p>");
                     });
                 break;
                 case 3:
                     amount = $("#bidAmountIn").val();
-                    instance.bid({from: addr, gas: gasLimit, value: amount}).then(result => {
-                        console.log(result);
-                        $("#methodResult").html("Success");
-                    }).catch(function(error) {
-                        console.log(error);
-                        $("#methodResult").html("<p style='color:red'>Error</p>");
-                    });
+                    if(amount) {
+                        instance.bid({from: addr, gas: gasLimit, value: amount}).then(result => {
+                            console.log(result);
+                            $("#methodResult").html("Success");
+                        }).catch(function(error) {
+                            console.log(error);
+                            if((error+"").search(/have the correct nonce/))
+                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
+                            else
+                                $("#methodResult").html("<p style='color:red'>Error: Your bid was incorrect</p>");
+                        });
+                    } else
+                    $("#methodResult").html("<p style='color:red'>Error: Need a bidding value as parameter!</p>");
                 break;
             }
         });
@@ -311,7 +374,7 @@ App = {
                 break;
                 case 2: 
                     instance.getDuration().then(result => {
-                        out = "Duration: " + result;
+                        out = "Duration is " + result + " blocks";
                         $("#getterResult").html(out);
                     });
                 break;
@@ -362,7 +425,5 @@ App = {
 }
 
 spamButton = function() {
-    $(function() {
-        $(".newSpam").fadeIn().delay(2000).fadeOut();
-    });
+    $("#newSpam").fadeIn().delay(2000).fadeOut();
 }
