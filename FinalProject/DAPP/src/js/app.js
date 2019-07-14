@@ -198,7 +198,7 @@ App = {
                     instance.updateCurrentPhase({from: addr, gasLimit: gasLimit}).then(result => {
                         console.log(result);
                         instance.getCurrentPhase({from: addr}).then(result => {
-                            $("#methodResult").html("Success: " + result);
+                            $("#methodResult").html(result);
                         });
                     });
                 break;
@@ -241,13 +241,14 @@ App = {
                     });
                 break;
                 case 4:
-                    amount = $("valueIn");
+                    amount = $("#weiIn").val();
                     if(amount) {
                         nonce = Math.floor(Math.random() * 10000);
-                        hash = await instance.getKeccak(nonce, amount);
+                        hash = await instance.getKeccak(nonce, amount, {});
                         reservePrice = await instance.getReservePrice();
                         App.commitments[addr] = [amount, nonce];
                         instance.bid(hash, {from: addr, gas: gasLimit, value: reservePrice.toNumber()}).then(result => {
+                            console.log(result);
                             instance.getMyCommitmentStatus().then(result => {
                                 if(result === "This commitment is valid and not opened yet") 
                                     $("#methodResult").html("Success: Bid placed");
@@ -280,7 +281,7 @@ App = {
                                 $("#methodResult").html("<p style='color:red'>Error: Failed to open (check phase)</p>");
                         });
                     });
-                    remove(App.commitments[addr]);
+                    //remove(App.commitments[addr]);
                 break;
                 case 7: 
                     console.log("Suicide operation begins");
@@ -289,7 +290,7 @@ App = {
                         $("#methodResult").html("Successfully killed the auction");
                     }).catch(function(error) {
                         console.log(error);
-                        $("#methodResult").html("Error: are you the owner?");
+                        $("#methodResult").html("<p style='color:red'>Error: are you the owner?</p>");
                     });
                 break;
             }
@@ -434,7 +435,7 @@ App = {
                         $("#methodResult").html("Successfully killed the auction");
                     }).catch(function(error) {
                         console.log(error);
-                        $("#methodResult").html("Error: are you the owner?");
+                        $("#methodResult").html("<p style='color:red'>Error: are you the owner?</p>");
                     });
                 break;
             }

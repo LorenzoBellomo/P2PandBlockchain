@@ -33,7 +33,7 @@ The project is organized as follows:
 	\item \emph{node\_modules and src}: Folders related to node and the front-end part. The \emph{src} folder contains some \emph{.css} files (bootstrap).
 	\item \emph{index.html}: It only contains the view for the top navbar in the web page, and the two buttons used to choose the auction to render.
 	\item \emph{views folder}: It contains \emph{vickrey.html} and \emph{dutch.html}, which are the files needed to render the auctions.
-	\item \emph{js/app.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and manages the interface towards the contracts.
+	\item \emph{js/app.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and it also manages the interface towards the contracts. All the contract calls to the contracts (setters, getters and events for both the auctions), are handled in this file. The file structure is organized in three parts. The top part contains the web3 initialization, which is common to both auctions. The middle part is the Vickrey auction related one. It contains a method (\emph{listenForEventsV()}) for setting up the callbacks for this type of auction, another one for all the calls to the main methods (\emph{callerV()}), another one for the getters (\emph{getterV()}) and some other small utility ones. The third and last part is identical to the former one, but related to the Dutch auction.
 \end{itemize}
 
 
@@ -46,6 +46,7 @@ This section contains all the modifications applied to the delivered Final Term 
 	\item \emph{Dutch - Added auctionPhase}: In order to better implement the previous point, the boolean variable ended has been changed to a phase enum in the Dutch Auction. The phases are NEW, ALIVE and ENDED.
 	\item \emph{Dutch - Changed assert to require}: In order to better respect the require-assert definition, the assert in the constructor has been changed to a require.
 	\item \emph{Both - Added some getters}: In order to improve clarity and respect the previous changes in the contracts, some getters have been added.
+	\item \emph{Both - Added suicide operation}: The auction suicides whenever the owner of this auction presses on the red button in the UI.
 \end{itemize}
 
 \section*{Main Project Choices}
@@ -59,9 +60,19 @@ Below are listed the main project choices, together with an explanation regardin
 		\item \emph{Bottom Left area}: Provides an interface to call some getter methods from the contract and shows the result of both the main methods from the top area and the getters.
 		\item \emph{Bottom Right area}: Area with some live information about the auction, together with all the events generated from the smart contract.
 	\end{itemize}
-	\item \emph{Vickrey Auction bids}: The vickrey auction interface provides the ability to bid and open a commitment. The interface does not provide an input field for the nonce and for the hash, but handles those transparently. In addition to that, the only input to be provided for making a bid is the bidding value, and it is provided directly in the bidding phase (in opposition with the contract, where the payment of that amount is delayed to the opening phase). The DAPP will handle the contract payment delay, together with the handling of the hashes and nonces transparently for the user.
+	\item \emph{Vickrey Auction bids}: The Vickrey auction interface provides the ability to bid and open a commitment. The interface does not provide an input field for the nonce and for the hash, but handles those transparently. In addition to that, the only input to be provided for making a bid is the bidding value, and it is provided directly in the bidding phase (in opposition with the contract, where the payment of that amount is delayed to the opening phase). The DAPP will handle the contract payment delay, together with the handling of the hashes and nonces transparently for the user.
 \end{itemize}
+
+\section*{Testing and Setup}
+	In order to test locally the project those action are going to be needed:
+	\begin{enumerate}
+		\item \emph{Run Ganache}: The default port varies. The one that has been set in the project configuration file is 7545. If this is not the case, then just change property \emph{port} of \emph{development} in the \emph{truffle-config.json} file.
+		\item \emph{Migrate}: Do \emph{truffle migrate --reset} in order to compile the project and deploy them on the Ropsten test net. The account that pays the deployment price is the first one in Ganache. This also generates the build folder. The parameters passed to the contract constructors are specified in the file \emph{1\_initial\_migration.js}. In order to change them, just edit this file.
+		\item \emph{Run the server}: Just do \emph{npm run dev}. This starts the lite server.
+		\item \emph{Browser}: At this point, two things are going to be needed: \emph{MetaMask} and the \emph{web view}. Just open on the browser \emph{localhost:3000}. Now login with your MetaMask with an account and connect it to Ganache. Import the needed amount of accounts from Ganache through their private key and the setup should be complete.
+	\end{enumerate}
 	
+\section*{Migration on Ropsten}
 
 \end{document}          
 
