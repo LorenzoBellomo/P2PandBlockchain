@@ -15,7 +15,7 @@
                     <div class="input-group-prepend">
                             <button class="btn btn-outline-primary" type="button" onClick="App.callerV(2)">Create Auction</button>
                     </div>
-                    <input type="text" class="form-control" placeholder="Auctioneer address" aria-label="Username" aria-describedby="basic-addon1" id="createInput">
+                    <input type="text" class="form-control" placeholder="Auctioneer address (optional)" aria-label="Username" aria-describedby="basic-addon1" id="createInput">
                 </div>
                 <div class="input-group mb-3">
                     <button class="btn btn-outline-primary" type="button" onClick="App.callerV(1)">Change Auction Phase</button>
@@ -41,7 +41,6 @@
                     <div class="input-group-prepend">
                         <button class="btn btn-outline-primary" type="button" onClick="App.callerV(4)">Open</button>
                     </div>
-                    <input type="text" class="form-control" placeholder="Reserve Price (wei)" aria-label="Username" aria-describedby="basic-addon1" id="valueIn">
                 </div>
             </div>
         </div>
@@ -73,6 +72,25 @@
                 <div class="form-group col-xs-3">
                     Gas Limit (wei):
                     <input type="text" class="form-control" value="3000000" aria-label="Username" aria-describedby="basic-addon1" id="gasLimit">
+                </div>
+            </div>
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal">Destroy Auction</button>
+            <div id="myModal" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Awaiting confirmation</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure that you want to delete the auction?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" onClick=App.callerV(7);>Yes</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

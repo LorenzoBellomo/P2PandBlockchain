@@ -139,6 +139,7 @@ contract DutchAuction {
 
     // Check changelog, this function just kills the contract and the decrease logic
     function destroyContract() external {
+        require(msg.sender == owner, "Only the owner can kill the auction");
         decreaseLogic.destroy(owner);
         selfdestruct(owner);
     }

@@ -330,6 +330,7 @@ contract VickreyAuction {
 
     // check changelog, basically kills this contract
     function destroyContract() external {
+        require(msg.sender == owner, "Only the owner of the auction can kill it");
         selfdestruct(owner);
     }
 
@@ -397,6 +398,10 @@ contract VickreyAuction {
             return "Opening period";
         else
             return "Auction is ended";
+    }
+
+    function isFinalized() external view returns (bool) {
+        return (auctionStatus == AuctionStatus.FINALIZED);
     }
 
     function getCommitmentStatus(address addr) external view returns (string memory) {

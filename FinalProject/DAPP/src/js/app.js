@@ -1,6 +1,6 @@
 App = {
     contracts: {}, // Store contract abstractions
-    hashesAndNonces: {},
+    commitments: {}, // store the couples (amount, nonce) for the commitments in the vickrey auction
     web3Provider: null, // Web3 provider
     url: 'http://localhost:7545', // Url for web3
     init: function(type) { return App.initWeb3(type); },
@@ -15,6 +15,7 @@ App = {
             App.web3Provider = new Web3.providers.HttpProvider(App.url); // <==
             web3 = new Web3(App.web3Provider);
         }
+        // At this point I have to initialize/render the vickrey or the dutch auction
         if(type==1)
             return App.initVickrey();
         else
@@ -25,11 +26,13 @@ App = {
         $.getJSON("VickreyAuction.json").done(function(c) {
             App.contracts["VickreyAuction"] = TruffleContract(c);
             App.contracts["VickreyAuction"].setProvider(App.web3Provider);
-            return App.listenForEventsV();
+            return App.listenForEventsV(); // the V stands for vickrey
         });
     },
     listenForEventsV: function() {
+        // Vickrey event listener (of course they are different with the dutch ones)
         App.contracts["VickreyAuction"].deployed().then(async (instance) => {
+            // All the listeners just set some field in the UI, nothing interesting
             web3.eth.getBlockNumber(function (error, block) {
                 instance.AuctionBegins({
                     fromBlock: 0,
@@ -117,10 +120,12 @@ App = {
                     $('#eventSink').html("New (temporary) winner");
                     $('#eventData').html("Current Winner: " + event.args.currentWinner + 
                                         "<br>Top Payment until now: " + event.args.topPayment.toNumber());
+                    $('#currentWinner').html(event.args.currentWinner);
                     spamButton();
                 });
             });
-            return App.renderDutch();
+            // End listeners
+            return App.renderVickrey();
         });
     },
     renderVickrey: function() { 
@@ -134,6 +139,9 @@ App = {
         });
     },
     getV: function(code) {
+        // Caller for the getter methods found in the dropdown menu
+        // depending on parameter code a different getter method is called
+        // the result of the single getter methods is put in the getter field
         var addr = web3.eth.accounts[0];
         App.contracts["VickreyAuction"].deployed().then(async(instance) => {
             switch(code){
@@ -178,63 +186,117 @@ App = {
         })
     },
     callerV: function(code) {
+        // Wrapper for all the calls to the main methods in the vickrey contract
         App.contracts["VickreyAuction"].deployed().then(async(instance) =>{
             var accounts =  await web3.eth.getAccounts();
             addr = accounts[0];
+            // I get the metamask first address, and the gas limit specified by the user
+            gasLimit = $("#gasLimit").val();
+            // Now I choose which main method has to be called
             switch(code){
                 case 1:
-                    gasLimit = $("#gasLimit").val();
-                    instance.updateCurrentPhase({from: addr, gas: gasLimit}).then(result => {
+                    instance.updateCurrentPhase({from: addr, gasLimit: gasLimit}).then(result => {
                         console.log(result);
-                        $("#methodResult").html("Success");
+                        instance.getCurrentPhase({from: addr}).then(result => {
+                            $("#methodResult").html("Success: " + result);
+                        });
                     });
                 break;
                 case 2:
-                    auct = $("createInput").val();
-                    instance.createAuction(auct, {from: addr}).then(result => {
-                        out = result;
-                        $("#methodResult").html(out);
-                    });
+                    auctAddr = $("#auctAddrIn").val();
+                    if(auctAddr) {
+                        instance.methods['createAuction(address)'](auctAddr, {from: addr, gas: gasLimit}).then(result => {
+                            console.log(result);
+                            $("#methodResult").html("Success");
+                        }).catch(function(error) {
+                            console.log(error);
+                            if((error+"").search(/have the correct nonce/))
+                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
+                            else
+                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                        });
+                    } else {
+                        instance.methods['createAuction()']({from: addr, gas: gasLimit}).then(result => {
+                            console.log(result);
+                            $("#methodResult").html("Success");
+                        }).catch(function(error) {
+                            console.log(error);
+                            if((error+"").search(/have the correct nonce/))
+                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
+                            else
+                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                        });
+                    }
                 break;
                 case 3:
-                    instance.finalize({from: addr}).then(result => {
-                        out = result;
-                        $("#methodResult").html(out);
+                    instance.finalize({from: addr, gas: gasLimit}).then(result => {
+                        console.log(result);
+                        instance.isFinalized().then(result => {
+                            if(result) 
+                                $("#methodResult").html("Correctly Finalized");
+                            else {
+                                $("#methodResult").html("<p style='color:red'>Error: Not Finalized (This method might have failed because you are not the owner, or because it was called too early)</p>");
+                            }
+                        });
                     });
                 break;
                 case 4:
                     amount = $("valueIn");
-                    gasLimit = $("gasLimit");
-                    nonce = Math.floor(Math.random() * 10000);
-                    instance.getKeccak(nonce, amount).then(result => {
-                        hash = result;
-                        App.hashesAndNonces[addr] = [hash, nonce];
-                        instance.bid(hash, {from: addr, gas: gasLimit, value: amount}).then(result => {
-                            out = result;
-                            $("#methodResult").html(out);
+                    if(amount) {
+                        nonce = Math.floor(Math.random() * 10000);
+                        hash = await instance.getKeccak(nonce, amount);
+                        reservePrice = await instance.getReservePrice();
+                        App.commitments[addr] = [amount, nonce];
+                        instance.bid(hash, {from: addr, gas: gasLimit, value: reservePrice.toNumber()}).then(result => {
+                            instance.getMyCommitmentStatus().then(result => {
+                                if(result === "This commitment is valid and not opened yet") 
+                                    $("#methodResult").html("Success: Bid placed");
+                                else 
+                                    $("#methodResult").html("<p style='color:red'>Error: The commitment failed (check phase)</p>");
+                            });
+                        });
+                    } else {
+                        $("#methodResult").html("<p style='color:red'>Error: Need a bidding value</p>");
+                    }
+                break;
+                case 5:
+                    instance.withdraw({from: addr, gas: gasLimit}).then(result => {
+                        instance.getMyCommitmentStatus().then(result => {
+                            if(result === "This commitment was withdrawn") 
+                                $("#methodResult").html("Success: Bid withdrawn");
+                            else 
+                                $("#methodResult").html("<p style='color:red'>Error: Failed to withdraw (check phase)</p>");
                         });
                     });
                 break;
-                case 5:
-                    // withdraw
-                    instance.withdraw({from: addr}).then(result => {
-                        out = result;
-                        $("#methodResult").html(out);
-                    });
-                break;
                 case 6:
-                    hash = App.hashesAndNonces[addr][0];
-                    nonce = App.hashesAndNonces[addr][1];
-                    remove(App.hashesAndNonces[addr]);
-                    instance.open(nonce, {from: addr}).then(result => {
-                        out = result;
-                        $("#methodResult").html(out);
+                    amount = App.commitments[addr][0];
+                    nonce = App.commitments[addr][1];
+                    instance.open(nonce, {from: addr, gas: gasLimit, value: amount}).then(result => {
+                        instance.getMyCommitmentStatus().then(result => {
+                            if(result === "This commitment is currently winning" || result === "This commitment was opened, but is not winning") 
+                                $("#methodResult").html("Success: Bid opened");
+                            else 
+                                $("#methodResult").html("<p style='color:red'>Error: Failed to open (check phase)</p>");
+                        });
+                    });
+                    remove(App.commitments[addr]);
+                break;
+                case 7: 
+                    console.log("Suicide operation begins");
+                    instance.destroyContract({from: addr, gasLimit: gasLimit}).then(result => {
+                        console.log(result);
+                        $("#methodResult").html("Successfully killed the auction");
+                    }).catch(function(error) {
+                        console.log(error);
+                        $("#methodResult").html("Error: are you the owner?");
                     });
                 break;
             }
         });
     },
     refreshV: function(){
+        // Callback for the refresh button in the live auction info panel
         App.contracts["VickreyAuction"].deployed().then(async(instance) => {
             instance.getCurrentWinner().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
@@ -273,6 +335,7 @@ App = {
                     $('#eventData').html("Start Price: " + event.args.startPrice.toNumber() + 
                                         "<br>Reserve Price: " + event.args.reservePrice.toNumber() +
                                         "<br>duration: " + event.args.duration.toNumber());
+                    $("#currentPrice").html(event.args.startPrice.toNumber());
                     spamButton();
                 });
 
@@ -284,6 +347,7 @@ App = {
                     $('#eventSink').html("Auction Ended");
                     $('#eventData').html("Winner: " + event.args.winner + 
                                         "<br>Amount: " + event.args.amount);
+                    $("#currentPrice").html("None");
                     spamButton();
                 });
             });
@@ -335,10 +399,13 @@ App = {
                 case 2: 
                     instance.checkIfAuctionEnded({from: addr, gas: gasLimit}).then(result => {
                         console.log(result);
-                        $("#methodResult").html("Success");
+                        instance.isEnded().then(result => {
+                            out = (result)? "Auction is ended" : "Auction is NOT ended";
+                            $("#methodResult").html(out);
+                        });
                     }).catch(function(error) {
-                        console.log(error);
-                        if((error+"").search(/have the correct nonce/))
+                        console.log(error +"");
+                        if((error+"").includes("have the correct nonce"))
                             $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
                         else
                             $("#methodResult").html("<p style='color:red'>Error: Forbidden method. Are you the auctioneer?</p>");
@@ -358,7 +425,17 @@ App = {
                                 $("#methodResult").html("<p style='color:red'>Error: Your bid was incorrect</p>");
                         });
                     } else
-                    $("#methodResult").html("<p style='color:red'>Error: Need a bidding value as parameter!</p>");
+                        $("#methodResult").html("<p style='color:red'>Error: Need a bidding value as parameter!</p>");
+                break;
+                case 4: 
+                    console.log("Suicide operation begins");
+                    instance.destroyContract({from: addr, gasLimit: gasLimit}).then(result => {
+                        console.log(result);
+                        $("#methodResult").html("Successfully killed the auction");
+                    }).catch(function(error) {
+                        console.log(error);
+                        $("#methodResult").html("Error: are you the owner?");
+                    });
                 break;
             }
         });
@@ -391,6 +468,7 @@ App = {
                     instance.getCurrentPrice().then(result => {
                         out = "Current price is " + result;
                         $("#getterResult").html(out);
+                        $("#currentPrice").html(out);
                     }).catch(function() {
                         $("#getterResult").html("<p style=\"color:red;\">Wrong phase to call current Price</p>");
                     });
@@ -425,5 +503,5 @@ App = {
 }
 
 spamButton = function() {
-    $("#newSpam").fadeIn().delay(2000).fadeOut();
+    $("#newSpam").fadeIn().delay(5000).fadeOut();
 }

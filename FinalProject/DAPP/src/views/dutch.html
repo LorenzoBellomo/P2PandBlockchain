@@ -15,7 +15,7 @@
                 <div class="input-group-prepend">
                     <button class="btn btn-outline-primary" type="button" id="button-addon1" onClick="App.callerD(1)">Create Auction</button>
                 </div>
-                <input id="auctAddrIn" type="text" class="form-control" placeholder="Auctioneer address" aria-label="Username" aria-describedby="basic-addon1">
+                <input id="auctAddrIn" type="text" class="form-control" placeholder="Auctioneer address (optional)" aria-label="Username" aria-describedby="basic-addon1">
             </div>
         </div>
     </div>
@@ -57,6 +57,26 @@
                 <div class="form-group col-xs-3">
                     Gas Limit (wei):
                     <input type="text" class="form-control" value="3000000" aria-label="Username" aria-describedby="basic-addon1" id="gasLimit">
+                </div>
+            </div>
+
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal">Destroy Auction</button>
+            <div id="myModal" class="modal fade" role="dialog">
+                <div class="modal-dialog">
+                    <!-- Modal content-->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4 class="modal-title">Awaiting confirmation</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p>Are you sure that you want to delete the auction?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal" onClick=App.callerD(4);>Yes</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

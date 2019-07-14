@@ -59,6 +59,7 @@ Below are listed the main project choices, together with an explanation regardin
 		\item \emph{Bottom Left area}: Provides an interface to call some getter methods from the contract and shows the result of both the main methods from the top area and the getters.
 		\item \emph{Bottom Right area}: Area with some live information about the auction, together with all the events generated from the smart contract.
 	\end{itemize}
+	\item \emph{Vickrey Auction bids}: The vickrey auction interface provides the ability to bid and open a commitment. The interface does not provide an input field for the nonce and for the hash, but handles those transparently. In addition to that, the only input to be provided for making a bid is the bidding value, and it is provided directly in the bidding phase (in opposition with the contract, where the payment of that amount is delayed to the opening phase). The DAPP will handle the contract payment delay, together with the handling of the hashes and nonces transparently for the user.
 \end{itemize}
 	
 
