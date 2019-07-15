@@ -1,3 +1,5 @@
+// migrations/1_initial_migration.js
+
 const Migrations = artifacts.require("Migrations");
 const vickrey = artifacts.require("VickreyAuction");
 const dutch = artifacts.require("DutchAuction");

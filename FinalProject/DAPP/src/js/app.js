@@ -1,3 +1,5 @@
+// filename: js/App.js
+
 App = {
     contracts: {}, // Store contract abstractions
     commitments: {}, // store the couples (amount, nonce) for the commitments in the vickrey auction
@@ -195,6 +197,8 @@ App = {
             // Now I choose which main method has to be called
             switch(code){
                 case 1:
+                    // Update current phase (in case of local testing, this is the function that is
+                    // used to mine a virtual block)
                     instance.updateCurrentPhase({from: addr, gasLimit: gasLimit}).then(result => {
                         console.log(result);
                         instance.getCurrentPhase({from: addr}).then(result => {
@@ -203,6 +207,7 @@ App = {
                     });
                 break;
                 case 2:
+                    // the owner uses this method to create the auction (start the grace time)
                     auctAddr = $("#auctAddrIn").val();
                     if(auctAddr) {
                         instance.methods['createAuction(address)'](auctAddr, {from: addr, gas: gasLimit}).then(result => {
@@ -214,6 +219,7 @@ App = {
                             $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     } else {
+                        // overloaded method, in this case the owner becomes also the auctioneer
                         instance.methods['createAuction()']({from: addr, gas: gasLimit}).then(result => {
                             console.log(result);
                             $("#methodResult").html("Success");
@@ -225,6 +231,7 @@ App = {
                     }
                 break;
                 case 3:
+                    // finalize is called by the owner at the end of the vickrey auction 
                     instance.finalize({from: addr, gas: gasLimit}).then(result => {
                         console.log(result);
                         instance.isFinalized().then(result => {
@@ -237,6 +244,10 @@ App = {
                     });
                 break;
                 case 4:
+                    // Bid takes as input the value of the bid. The auction does not pay this amount (for now), 
+                    // but delays this payment to the opening phase. This wrapper stores (in App.commitments)
+                    // the amount passed as parameter and the nonce generated at random. It then bids paying the 
+                    // deposit price
                     amount = $("#weiIn").val();
                     if(amount) {
                         nonce = Math.floor(Math.random() * 10000);
@@ -257,6 +268,7 @@ App = {
                     }
                 break;
                 case 5:
+                    // This method simply calls the withdraw one from the contract
                     instance.withdraw({from: addr, gas: gasLimit}).then(result => {
                         instance.getMyCommitmentStatus().then(result => {
                             if(result === "This commitment was withdrawn") 
@@ -267,19 +279,23 @@ App = {
                     });
                 break;
                 case 6:
+                    // This is the open method. It takes from the storage (App.commitments) the nonce and
+                    // the bidding amount. At this point it pays amount and passes value as parameter to the
+                    // contract function open.
                     amount = App.commitments[addr][0];
                     nonce = App.commitments[addr][1];
                     instance.open(nonce, {from: addr, gas: gasLimit, value: amount}).then(result => {
-                        instance.getMyCommitmentStatus().then(result => {
+                        instance.getMyCommitmentStatus({from: addr}).then(result => {
+                            console.log(result);
                             if(result === "This commitment is currently winning" || result === "This commitment was opened, but is not winning") 
                                 $("#methodResult").html("Success: Bid opened");
                             else 
                                 $("#methodResult").html("<p style='color:red'>Error: Failed to open (check phase)</p>");
                         });
                     });
-                    //remove(App.commitments[addr]);
                 break;
                 case 7: 
+                    // red button callback, calls suicide method
                     console.log("Suicide operation begins");
                     instance.destroyContract({from: addr, gasLimit: gasLimit}).then(result => {
                         console.log(result);
@@ -322,6 +338,9 @@ App = {
         });
     },
     listenForEventsD: function() {
+        // Only two events are raised by this auction. One when the auction is created (not 
+        // by means of the constructor, but by means of createAuction), and another when
+        // it ends
         App.contracts["DutchAuction"].deployed().then(async (instance) => {
             web3.eth.getBlockNumber(function (error, block) {
                 instance.AuctionBegins({
@@ -363,12 +382,14 @@ App = {
         });
     },
     callerD: function(code) {
+        // Wrapper for all the main contract calls made by the interface.
         App.contracts["DutchAuction"].deployed().then(async(instance) => {
             var accounts =  await web3.eth.getAccounts();
             addr = accounts[0];
             gasLimit = $("#gasLimit").val();
             switch(code){
                 case 1:
+                    // Owner method, the owner creates the auction specifying the address of the auctioneer
                     auctAddr = $("#auctAddrIn").val();
                     if(auctAddr) {
                         instance.methods['createAuction(address)'](auctAddr, {from: addr, gas: gasLimit}).then(result => {
@@ -380,6 +401,7 @@ App = {
                             $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     } else {
+                        // parameter-less overload, the owner becomes the auctioneer too
                         instance.methods['createAuction()']({from: addr, gas: gasLimit}).then(result => {
                             console.log(result);
                             $("#methodResult").html("Success");
@@ -391,6 +413,7 @@ App = {
                     }
                 break;
                 case 2: 
+                    // Method used by the auctioneer to check if the auction has ended with no winner.
                     instance.checkIfAuctionEnded({from: addr, gas: gasLimit}).then(result => {
                         console.log(result);
                         instance.isEnded().then(result => {
@@ -404,6 +427,7 @@ App = {
                     });
                 break;
                 case 3:
+                    // This method is used to make a bid
                     amount = $("#bidAmountIn").val();
                     if(amount) {
                         instance.bid({from: addr, gas: gasLimit, value: amount}).then(result => {
@@ -418,6 +442,7 @@ App = {
                         $("#methodResult").html("<p style='color:red'>Error: Need a bidding value as parameter!</p>");
                 break;
                 case 4: 
+                    // This case calls the suicide operation in the contract
                     console.log("Suicide operation begins");
                     instance.destroyContract({from: addr, gasLimit: gasLimit}).then(result => {
                         console.log(result);
@@ -432,6 +457,8 @@ App = {
         });
     },
     getD: function(code) {
+        // Wrapper for the getters (view methods in the smart contract). It wraps the ones provided 
+        // by the dropdown menu in the UI
         App.contracts["DutchAuction"].deployed().then(async(instance) =>{
             switch(code){
                 case 1: 
@@ -474,6 +501,7 @@ App = {
         })
     },
     refreshD: function() {
+        // Callback for the refresh button placed inside the live auction status div
         App.contracts["DutchAuction"].deployed().then(async(instance) => {
             instance.getCurrentPrice().then(result => {
                 $("#currentPrice").html(result.toNumber());
@@ -493,6 +521,7 @@ App = {
     }
 }
 
+// This method makes a "new" png appear and disappear after 5 seconds whenever and event is receiver
 spamButton = function() {
     $("#newSpam").fadeIn().delay(5000).fadeOut();
 }

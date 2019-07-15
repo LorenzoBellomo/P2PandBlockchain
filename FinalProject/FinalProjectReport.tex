@@ -8,8 +8,14 @@
 \usepackage{hyperref}
 \usepackage{mathtools}
 \usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
 %\usepackage{float}
 
+\colorlet{punct}{red!60!black}
+\definecolor{background}{HTML}{EEEEEE}
+\definecolor{delim}{RGB}{20,105,176}
+\colorlet{numb}{magenta!60!black}
 
 %\graphicspath{ {./latexImages/} }
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
@@ -19,6 +25,35 @@
 	\large Development of a DAPP for Smart Auctions}
 \author{Lorenzo Bellomo, 531423}
 \date{}
+
+\lstdefinelanguage{json}{
+	basicstyle=\normalfont\ttfamily,
+	numbers=left,
+	numberstyle=\scriptsize,
+	stepnumber=1,
+	numbersep=8pt,
+	showstringspaces=false,
+	breaklines=true,
+	frame=lines,
+	backgroundcolor=\color{background},
+	literate=
+	*{0}{{{\color{numb}0}}}{1}
+	{1}{{{\color{numb}1}}}{1}
+	{2}{{{\color{numb}2}}}{1}
+	{3}{{{\color{numb}3}}}{1}
+	{4}{{{\color{numb}4}}}{1}
+	{5}{{{\color{numb}5}}}{1}
+	{6}{{{\color{numb}6}}}{1}
+	{7}{{{\color{numb}7}}}{1}
+	{8}{{{\color{numb}8}}}{1}
+	{9}{{{\color{numb}9}}}{1}
+	{:}{{{\color{punct}{:}}}}{1}
+	{,}{{{\color{punct}{,}}}}{1}
+	{\{}{{{\color{delim}{\{}}}}{1}
+	{\}}{{{\color{delim}{\}}}}}{1}
+	{[}{{{\color{delim}{[}}}}{1}
+	{]}{{{\color{delim}{]}}}}{1},
+}
 
 
 \begin{document}
@@ -33,7 +68,7 @@ The project is organized as follows:
 	\item \emph{node\_modules and src}: Folders related to node and the front-end part. The \emph{src} folder contains some \emph{.css} files (bootstrap).
 	\item \emph{index.html}: It only contains the view for the top navbar in the web page, and the two buttons used to choose the auction to render.
 	\item \emph{views folder}: It contains \emph{vickrey.html} and \emph{dutch.html}, which are the files needed to render the auctions.
-	\item \emph{js/app.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and it also manages the interface towards the contracts. All the contract calls to the contracts (setters, getters and events for both the auctions), are handled in this file. The file structure is organized in three parts. The top part contains the web3 initialization, which is common to both auctions. The middle part is the Vickrey auction related one. It contains a method (\emph{listenForEventsV()}) for setting up the callbacks for this type of auction, another one for all the calls to the main methods (\emph{callerV()}), another one for the getters (\emph{getterV()}) and some other small utility ones. The third and last part is identical to the former one, but related to the Dutch auction.
+	\item \emph{js/App.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and it also manages the interface towards the contracts. All the contract calls to the contracts (setters, getters and events for both the auctions), are handled in this file. The file structure is organized in three parts. The top part contains the web3 initialization, which is common to both auctions. The middle part is the Vickrey auction related one. It contains a method (\emph{listenForEventsV()}) for setting up the callbacks for this type of auction, another one for all the calls to the main methods (\emph{callerV()}), another one for the getters (\emph{getterV()}) and some other small utility ones. The third and last part is identical to the former one, but related to the Dutch auction.
 \end{itemize}
 
 
@@ -63,16 +98,41 @@ Below are listed the main project choices, together with an explanation regardin
 	\item \emph{Vickrey Auction bids}: The Vickrey auction interface provides the ability to bid and open a commitment. The interface does not provide an input field for the nonce and for the hash, but handles those transparently. In addition to that, the only input to be provided for making a bid is the bidding value, and it is provided directly in the bidding phase (in opposition with the contract, where the payment of that amount is delayed to the opening phase). The DAPP will handle the contract payment delay, together with the handling of the hashes and nonces transparently for the user.
 \end{itemize}
 
-\section*{Testing and Setup}
-	In order to test locally the project those action are going to be needed:
+\section*{Local and Remote setup}
+	\paragraph*{Local Testing}
+	In order to test the application locally those actions are going to be needed
 	\begin{enumerate}
 		\item \emph{Run Ganache}: The default port varies. The one that has been set in the project configuration file is 7545. If this is not the case, then just change property \emph{port} of \emph{development} in the \emph{truffle-config.json} file.
 		\item \emph{Migrate}: Do \emph{truffle migrate --reset} in order to compile the project and deploy them on the Ropsten test net. The account that pays the deployment price is the first one in Ganache. This also generates the build folder. The parameters passed to the contract constructors are specified in the file \emph{1\_initial\_migration.js}. In order to change them, just edit this file.
 		\item \emph{Run the server}: Just do \emph{npm run dev}. This starts the lite server.
 		\item \emph{Browser}: At this point, two things are going to be needed: \emph{MetaMask} and the \emph{web view}. Just open on the browser \emph{localhost:3000}. Now login with your MetaMask with an account and connect it to Ganache. Import the needed amount of accounts from Ganache through their private key and the setup should be complete.
 	\end{enumerate}
+	\paragraph*{Remote Testing}:
+	In case of a deployment on the Ropsten test net, then the process is the following:
+	\begin{enumerate}
+		\item \emph{Create Infura project}: Infura is used as a provided, so an Infura project is needed. After having created one, copy the Infura project ID.
+		\item \emph{Create ropsten.json file}: This file is needed from \emph{truffle-config.js} in order to export the project through infura provider. In figure \ref{fig:ropsten}, the file structure is shown. The \emph{infura\_key} is the previously copied filed, while the seed are shown in metamask by going under settings, security and privacy and then reveal seed phrase.
+		\item \emph{Migrate}: At this point, issue this command: \emph{truffle migrate --network ropsten}. Every contract migration has to be really mined so around one/two minute wait is to be expected.
+		\item \emph{Run web app}: Same as before, login with MetaMask and connect it to Ropsten. Get some fake ether on some accounts and then run \emph{npm run dev} in order to run the web page. Visit at this point \emph{localhost:3000} where the empty web view should appear.
+	\end{enumerate}
+	\begin{figure}
+		\caption{\emph{ropsten.json} file format}
+		\label{fig:ropsten}
+		\begin{lstlisting}[language=json,firstnumber=1]
+{"mnemonic": "twelve metamask words under settings/security_and_privacy/reveal_seed_phrase",
+"infura_key": "insert infura project ID here"}
+		\end{lstlisting}
+	\end{figure}
 	
-\section*{Migration on Ropsten}
+\section*{Testing}
+	This section explains some operations that can be done in order to test the application both when it is deployed locally and when it is deployed on the Ropsten Testnet. \\
+	The only valuable difference between the two cases is that in order to make the time pass on Ganache it is necessary to mine fake blocks, which get mined whenever a \emph{successful transaction} is performed. The easiest way to do it in both auction is to call the phase checker function, which has the only effect of updating the phase in the auction. \\
+	If the application was deployed on Ropsten, it is suggested to increase the durations of the various phases in the contract (by at least a 2x or 3x factor). In order to do so, just change the parameters in the file \emph{1\_initial\_migration.js} under the \emph{migrations} folder. \\
+	Having specified that, some example operations for the Vickrey Auction are listed:
+	\begin{enumerate}
+		\item \emph{Create Auction}: The owner of the auction (make sure that you have the owner selected as an account under MetaMask) has the ability to start the auction (which starts the grace time). 
+		\item \emph{Commitment Phase}: Place some bids, considering that the value that has to be passed as parameter is not paid straight away, but it is paid by the application whenever the open method is called (so during the opening phase). The application takes care of this process under the hood.
+	\end{enumerate}
 
 \end{document}          
 
