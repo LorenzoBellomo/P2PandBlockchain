@@ -210,10 +210,8 @@ App = {
                             $("#methodResult").html("Success");
                         }).catch(function(error) {
                             console.log(error);
-                            if((error+"").search(/have the correct nonce/))
-                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
-                            else
-                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                            err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                            $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     } else {
                         instance.methods['createAuction()']({from: addr, gas: gasLimit}).then(result => {
@@ -221,10 +219,8 @@ App = {
                             $("#methodResult").html("Success");
                         }).catch(function(error) {
                             console.log(error);
-                            if((error+"").search(/have the correct nonce/))
-                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
-                            else
-                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                            err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                            $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     }
                 break;
@@ -290,7 +286,8 @@ App = {
                         $("#methodResult").html("Successfully killed the auction");
                     }).catch(function(error) {
                         console.log(error);
-                        $("#methodResult").html("<p style='color:red'>Error: are you the owner?</p>");
+                        err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                        $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                     });
                 break;
             }
@@ -366,7 +363,7 @@ App = {
         });
     },
     callerD: function(code) {
-        App.contracts["DutchAuction"].deployed().then(async(instance) =>{
+        App.contracts["DutchAuction"].deployed().then(async(instance) => {
             var accounts =  await web3.eth.getAccounts();
             addr = accounts[0];
             gasLimit = $("#gasLimit").val();
@@ -379,10 +376,8 @@ App = {
                             $("#methodResult").html("Success");
                         }).catch(function(error) {
                             console.log(error);
-                            if((error+"").search(/have the correct nonce/))
-                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
-                            else
-                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                            err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                            $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     } else {
                         instance.methods['createAuction()']({from: addr, gas: gasLimit}).then(result => {
@@ -390,10 +385,8 @@ App = {
                             $("#methodResult").html("Success");
                         }).catch(function(error) {
                             console.log(error);
-                            if((error+"").search(/have the correct nonce/))
-                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
-                            else
-                                $("#methodResult").html("<p style='color:red'>Error, are you the owner?</p>");
+                            err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                            $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     }
                 break;
@@ -405,11 +398,9 @@ App = {
                             $("#methodResult").html(out);
                         });
                     }).catch(function(error) {
-                        console.log(error +"");
-                        if((error+"").includes("have the correct nonce"))
-                            $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
-                        else
-                            $("#methodResult").html("<p style='color:red'>Error: Forbidden method. Are you the auctioneer?</p>");
+                        console.log(error);
+                        err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                        $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                     });
                 break;
                 case 3:
@@ -420,10 +411,8 @@ App = {
                             $("#methodResult").html("Success");
                         }).catch(function(error) {
                             console.log(error);
-                            if((error+"").search(/have the correct nonce/))
-                                $("#methodResult").html("<p style='color:red'>Error: incorrect nonces for your account</p>");
-                            else
-                                $("#methodResult").html("<p style='color:red'>Error: Your bid was incorrect</p>");
+                            err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                            $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                         });
                     } else
                         $("#methodResult").html("<p style='color:red'>Error: Need a bidding value as parameter!</p>");
@@ -435,7 +424,8 @@ App = {
                         $("#methodResult").html("Successfully killed the auction");
                     }).catch(function(error) {
                         console.log(error);
-                        $("#methodResult").html("<p style='color:red'>Error: are you the owner?</p>");
+                            err = error.message.split("Error: VM Exception while processing transaction: revert")[1];
+                            $("#methodResult").html("<p style='color:red'>Error: " + err + "</p>");
                     });
                 break;
             }
