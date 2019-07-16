@@ -36,10 +36,12 @@ App = {
         App.contracts["VickreyAuction"].deployed().then(async (instance) => {
             // All the listeners just set some field in the UI, nothing interesting
             web3.eth.getBlockNumber(function (error, block) {
+                // first event is fired whenever an auction begins
                 instance.AuctionBegins({
                     fromBlock: 0,
                     toBlock: 'latest'
                 }, function(error, event) {
+                    // attached data
                     console.log(event);
                     $('#eventSink').html("Auction Begins");
                     $('#eventData').html("Grace Time: " + event.args.graceTime.toNumber() + 
@@ -48,6 +50,7 @@ App = {
                     spamButton();
                 });
 
+                // next event is fired whenever and auction ends
                 instance.AuctionEnded({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -59,6 +62,9 @@ App = {
                     spamButton();
                 });
 
+                // this is fired when grace time ends. Consider that more than one phase switch may be 
+                // triggered by a single command (on a real blockchain, this happens because of the block
+                // time measure chosen)
                 instance.GraceTimeOver({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -91,7 +97,11 @@ App = {
                                         "<br>Number of bidders " + event.args.liveBidders.toNumber());
                     spamButton();
                 });
+                // End of the phase switch related events, each event of these carries the duration of the next
+                // phase as payload
 
+                // Below are the 3 bid related events
+                // the first one (new Commitment) is fired whenever someone makes a bid(commitment phase)     
                 instance.NewCommitment({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -103,6 +113,7 @@ App = {
                     spamButton();
                 });
 
+                // New Withdrawal gets fired whenever someone withdraws the auction (during withdrawal phase)
                 instance.NewWithdrawal({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -114,6 +125,8 @@ App = {
                     spamButton();
                 });
 
+                // New leader is fired during the opening phase, and it happens when a new opening
+                // has revealed the highest bid (yet). So the event is not a winner declaration.
                 instance.NewLeader({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -148,12 +161,15 @@ App = {
         App.contracts["VickreyAuction"].deployed().then(async(instance) => {
             switch(code){
                 case 1: 
+                    // ask the contract the current phase
+                    // it returns a descriptive string
                     instance.getCurrentPhase({from: addr}).then(result => {
                         out = result;
                         $("#getterResult").html(out);
                     });
                 break;
                 case 2: 
+                    // ask every phase duration to the contract
                     out = "Grace -> ";
                     instance.getGraceTimeDuration({from: addr}).then(result => {
                         out += result;
@@ -170,12 +186,15 @@ App = {
                     });
                 break;
                 case 3: 
+                    // ask if the contract has a commitment from my address, and display 
+                    // the information it returns (it's a descriptive string)
                     instance.getMyCommitmentStatus({from: addr}).then(result => {
                         out = "Your commitment status is: <br>\"" + result + "\"";
                         $("#getterResult").html(out);
                     });
                 break;
                 case 4:
+                    // ask reserve price and deposit
                     instance.getReservePrice({from: addr}).then(result => {
                         out = "Reserve Price -> " + result.toNumber();
                         instance.getDeposit({from: addr}).then(result => {
@@ -250,13 +269,20 @@ App = {
                     // deposit price
                     amount = $("#weiIn").val();
                     if(amount) {
+                        // I have an input, so I can proceed
+                        // Generate nonce randomly
                         nonce = Math.floor(Math.random() * 10000);
+                        // compute hash through contract call
                         hash = await instance.getKeccak(nonce, amount, {});
+                        // ask the contract the reserve price, since I have to pay it now
                         reservePrice = await instance.getReservePrice();
+                        // save this commitment for later use (when the user clicks on open)
                         App.commitments[addr] = [amount, nonce];
+                        // Make the bid
                         instance.bid(hash, {from: addr, gas: gasLimit, value: reservePrice.toNumber()}).then(result => {
                             console.log(result);
                             instance.getMyCommitmentStatus().then(result => {
+                                // ask the contract if the bid succeded
                                 if(result === "This commitment is valid and not opened yet") 
                                     $("#methodResult").html("Success: Bid placed");
                                 else 
@@ -312,12 +338,14 @@ App = {
     refreshV: function(){
         // Callback for the refresh button in the live auction info panel
         App.contracts["VickreyAuction"].deployed().then(async(instance) => {
+            // ask current winner
             instance.getCurrentWinner().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
                     $("#currentWinner").html("None");
                 else
                     $("#currentWinner").html(result);
             });
+            // ask auction owner and auctioneer
             instance.getOwner().then(result => {
                     $("#ownerAddr").html(result);
             });
@@ -343,6 +371,8 @@ App = {
         // it ends
         App.contracts["DutchAuction"].deployed().then(async (instance) => {
             web3.eth.getBlockNumber(function (error, block) {
+                // Only two events are generated
+                // One when the owner makes the auction begin
                 instance.AuctionBegins({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -356,6 +386,7 @@ App = {
                     spamButton();
                 });
 
+                // One when the auction ends (timeout, so with no winner or with a bidding winner)
                 instance.AuctionEnded({
                     fromBlock: 0,
                     toBlock: 'latest'
@@ -462,18 +493,21 @@ App = {
         App.contracts["DutchAuction"].deployed().then(async(instance) =>{
             switch(code){
                 case 1: 
+                    // ask current phase
                     instance.getCurrentPhase().then(result => {
                         out = result;
                         $("#getterResult").html(out);
                     });
                 break;
                 case 2: 
+                    // ask contract duration
                     instance.getDuration().then(result => {
                         out = "Duration is " + result + " blocks";
                         $("#getterResult").html(out);
                     });
                 break;
                 case 3: 
+                    // ask start and reserve price
                     instance.getStartPrice().then(result => {
                         out = "Start price -> " + result;
                         instance.getReservePrice().then(result => {
@@ -483,6 +517,8 @@ App = {
                     });
                 break;
                 case 4: 
+                    // ask current price, this method mught fail if called during grace period
+                    // or when the auction is over
                     instance.getCurrentPrice().then(result => {
                         out = "Current price is " + result;
                         $("#getterResult").html(out);
@@ -492,6 +528,7 @@ App = {
                     });
                 break;
                 case 5: 
+                    // Ask for the description (linear/logarithmic/exponential)
                     instance.getDecreaseLogicDescription().then(result => {
                         out = "Decrease logic is " + result;
                         $("#getterResult").html(out);
@@ -504,13 +541,17 @@ App = {
         // Callback for the refresh button placed inside the live auction status div
         App.contracts["DutchAuction"].deployed().then(async(instance) => {
             instance.getCurrentPrice().then(result => {
+                // ask current price
                 $("#currentPrice").html(result.toNumber());
             }).catch(function() {
+                // remember current price might fail if called in wrong phase
                 $("#currentPrice").html("None");
             });
             instance.getOwner().then(result => {
-                    $("#ownerAddr").html(result);
+                // ask owner
+                $("#ownerAddr").html(result);
             });
+            // ask auctioneer
             instance.getAuctioneer().then(result => {
                 if(result === "0x0000000000000000000000000000000000000000")
                     $("#auctAddr").html("None");

@@ -4,6 +4,7 @@
 
 <div class="container">
         <div class='page'>
+            <!-- A lot of buttons below. Each button calls App.callerV(code) with a different code to differenciate the method -->
             <div class='role'><h4>Auctioneer</h4></div>
             <div class="operations">
                 <div class="input-group mb-3">
@@ -55,7 +56,7 @@
             <div class="dropdown">
                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Getter methods</a>
                 <div class="dropdown-menu">
-                    <div class="dropdown-header">TIME RELATED</div>
+                    <div class="dropdown-header">TIME RELATED</div> <!-- Label -->
                     <a href="#" class="dropdown-item" onClick="App.getV(1)">Current Phase</a>
                     <a href="#" class="dropdown-item" onClick="App.getV(2)">Durations</a>
                     <div class="dropdown-header">COMMITMENT</div>
@@ -65,20 +66,24 @@
                 </div>
             </div>
             <div>
+                <!-- Here is where the getter methods result is displayed -->
                 Getter method result: 
                 <strong id="getterResult">None</strong>
             </div>
             <div>
+                <!-- Here is where the main methods result is displayed -->
                 Latest main method call result: 
                 <strong id="methodResult">None</strong>
             </div>
             <br>
             <div class="row">
                 <div class="form-group col-xs-3">
+                    <!-- Change the gas limit in the input below in order to change it during the contract calls -->
                     Gas Limit (wei):
                     <input type="text" class="form-control" value="3000000" aria-label="Username" aria-describedby="basic-addon1" id="gasLimit">
                 </div>
             </div>
+            <!-- Danger zone -->
             <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal">Destroy Auction</button>
             <div id="myModal" class="modal fade" role="dialog">
                 <div class="modal-dialog">

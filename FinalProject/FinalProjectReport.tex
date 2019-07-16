@@ -1,7 +1,7 @@
 \documentclass[11pt, a4paper]{report}
 
 \usepackage{nameref}
-%\usepackage{graphicx} in case remember graphics path below
+\usepackage{graphicx}
 \usepackage{lmodern}
 \usepackage[a4paper,top=3cm,bottom=4cm,left=3.5cm,right=3.5cm]{geometry}
 \usepackage[font=footnotesize,labelfont={sf,bf}]{caption}
@@ -10,6 +10,7 @@
 \usepackage{booktabs}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{dirtree}
 %\usepackage{float}
 
 \colorlet{punct}{red!60!black}
@@ -17,7 +18,7 @@
 \definecolor{delim}{RGB}{20,105,176}
 \colorlet{numb}{magenta!60!black}
 
-%\graphicspath{ {./latexImages/} }
+\graphicspath{ {./latexImages/} }
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
 % Title Page
 \title{
@@ -60,7 +61,7 @@
 	\maketitle
 	
 \section*{Project Structure}
-The project is organized as follows:
+The project is organized as shown in Figure \ref{fig:dirTree}, and the key points are:
 \begin{itemize}
 	\item \emph{Root folder}: It contains only the report file and a folder DAPP, all the code is in this folder.
 	\item \emph{DAPP folder}: It contains the configurations files needed (\emph{bs-config.json} for lite-server, \emph{package.json} for node, \emph{truffle-config.json} for truffle). It additionaly holds file ropsten.json, which contains the private credentials for ropsten deployment. Then other folders are explained just in the next points.
@@ -68,16 +69,55 @@ The project is organized as follows:
 	\item \emph{node\_modules and src}: Folders related to node and the front-end part. The \emph{src} folder contains some \emph{.css} files (bootstrap).
 	\item \emph{index.html}: It only contains the view for the top navbar in the web page, and the two buttons used to choose the auction to render.
 	\item \emph{views folder}: It contains \emph{vickrey.html} and \emph{dutch.html}, which are the files needed to render the auctions.
-	\item \emph{js/App.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and it also manages the interface towards the contracts. All the contract calls to the contracts (setters, getters and events for both the auctions), are handled in this file. The file structure is organized in three parts. The top part contains the web3 initialization, which is common to both auctions. The middle part is the Vickrey auction related one. It contains a method (\emph{listenForEventsV()}) for setting up the callbacks for this type of auction, another one for all the calls to the main methods (\emph{callerV()}), another one for the getters (\emph{getterV()}) and some other small utility ones. The third and last part is identical to the former one, but related to the Dutch auction.
+	\item \emph{js/App.js}: This is the file that contains the logic for the initialization of web3, the rendering of the two auctions, the handling of all the callbacks and it also manages the interface towards the contracts. \\All the contract calls (setters, getters and events for both the auctions), are handled in this file.\\ The file structure is organized in three parts. The top part contains the web3 initialization, which is common to both auctions. The middle part is the Vickrey auction related one. It contains a method (\emph{listenForEventsV()}) for setting up the callbacks for this type of auction, another one for all the calls to the main methods (\emph{callerV()}), another one for the getters (\emph{getterV()}) and some other small utility ones. The third and last part is identical to the former one, but related to the Dutch auction.
+	\begin{figure}
+		\dirtree{%
+			.1 /.
+			.2 FinalProjectReport.pdf.
+			.2 DAPP.
+			.3 build (generated).
+			.3 node\_modules (generated).
+			.3 contracts.
+			.4 decreaseLogic.sol.
+			.4 Migrations.sol.
+			.4 vickreyAuction.sol.
+			.4 dutchAuction.sol.
+			.3 migrations.
+			.4 1\_initial\_migrations.js.
+			.3 src.
+			.4 assets.
+			.5 just some images.
+			.4 css.
+			.5 style.css.
+			.5 bootstrap.min.css.
+			.4 js.
+			.5 App.js.
+			.5 some other file.min.js.
+			.4 views.
+			.5 dutch.html.
+			.5 vickrey.html.
+			.3 test.
+			.4 test.js.
+			.3 index.html.
+			.3 truffle-config.js.
+			.3 package.json.
+			.3 package\_lock.json (generated).
+			.3 bs-config.json.
+			.3 ropsten.json (optional, needed for ropsten migration).
+		}
+		\caption{The project \emph{directory} structure}
+		\label{fig:dirTree}
+	\end{figure}
+
 \end{itemize}
 
 
 \section*{Contracts ChangeLog}
 This section contains all the modifications applied to the delivered Final Term smart contracts. All the modifications have a motivation assigned.
 \begin{itemize}
-	\item \emph{Vickrey - Removed file Util.sol}: the only method that was provided in this file (computation of the nonce and amount hash for the Vickrey auction) has been moved to the file Vickrey auction. 
-	\item \emph{Both - Added auctioneer role}: the text of the project explicitely asks for an auctioneer role. The owner decides which account is the auctioneer when he calls the newly added method createAuction. If he does not decide an auctioneer, he becomes the one to take the role. As a note, in the Vickrey auction, the role of the auctioneer doesn't have a clear purpose. The way it will be used during the tests is to take care of the phase switches (at his expenses).
-	\item \emph{Both - Moved start time}: Both auctions, in the provided FinalTerm implementation, started in the moment the constructor was called. This was split in two phases. Phase one starts when the constructor is called, and it is the phase in which the auction is on the blockchain, but is not yet active (note, grace period is considered active). The secondPhase starts when the owner calls the method createAucion. In this method, the grace period begins and an event is emitted.
+	\item \emph{Vickrey - Removed file Util.sol}: the only method that was provided in this file (computation of the nonce and amount hash for the Vickrey auction commitments) has been moved to the file Vickrey auction. 
+	\item \emph{Both - Added auctioneer role}: the text of the project explicitely asks for an auctioneer role. The owner decides which account is the auctioneer when he calls the newly added method createAuction. If he does not decide an auctioneer, he becomes the one to take the role. As a note, in the Vickrey auction, the role of the auctioneer doesn't have a clear purpose. The way it will be used during the tests is to take care of the phase switches, in order to make him pay the gas price of those switches.
+	\item \emph{Both - Moved start time}: Both auctions, in the provided FinalTerm implementation, started in the moment the constructor was called. This was split in two phases. Phase one starts when the constructor is called, and it is the phase in which the auction is on the blockchain, but is not yet active (note, grace period is considered active). The second phase starts when the owner calls the method createAucion. In this method, the grace period begins and an event is emitted.
 	\item \emph{Dutch - Added auctionPhase}: In order to better implement the previous point, the boolean variable ended has been changed to a phase enum in the Dutch Auction. The phases are NEW, ALIVE and ENDED.
 	\item \emph{Dutch - Changed assert to require}: In order to better respect the require-assert definition, the assert in the constructor has been changed to a require.
 	\item \emph{Both - Added some getters}: In order to improve clarity and respect the previous changes in the contracts, some getters have been added.
@@ -88,50 +128,82 @@ This section contains all the modifications applied to the delivered Final Term 
 Below are listed the main project choices, together with an explanation regarding the reasoning behind those ones.
 \begin{itemize}
 	\item \emph{One HTML view}: The main choice is the one to collapse the three views (auctioneer, owner and bidder) in one HTML page. Technically this is incorrect (because of course every role should have its own customized web view), but this strongly simplifies testing and gives a broader view of the auction as a whole. This choice was taken mainly due to the fact that the setup code is identical for all the roles.
-	\item \emph{address management}: The first choice (collapsing the html views) strongly implies that it is not possible to fetch the MetaMask address while in initialization phase, and then use the same one for the whole interaction. This means that, for each operation that needs to have an address specified, it has to be fetched from MetaMask, resulting in a (very low) delay. The operations affected are only the main contract ones, as getter methods do not need to specify the address they come from. 
-	\item \emph{HTML view organization}: The web index prompts to the choice between the two implemented auctions (Dutch and Vickrey). After deciding which one to view, the web3 initialization process begins, which ends with the rendering of the appropriate view for the two auctions. The web page is organized in three areas:
+	\item \emph{address management}: The first choice (collapsing the html views) strongly implies that it is not possible to fetch the MetaMask address while in initialization phase, and then use the same one for the whole interaction. This means that, for each operation that needs to have an address specified, it has to be fetched from MetaMask, resulting in a (very low) delay. The operations affected are only the main contract ones, as getter methods do not need to specify the address they come from, with some rare exception. 
+	\item \emph{HTML view organization}: The web index prompts to the choice between the two implemented auctions (Dutch and Vickrey). After deciding which one to view, the web3 initialization process begins, which ends with the rendering of the appropriate view for the two auctions. The web page is organized in three areas as shown in figure \ref{fig:UI}:
 	\begin{itemize}
 		\item \emph{Top area}: Provides all the operations for the three roles of the auction.
 		\item \emph{Bottom Left area}: Provides an interface to call some getter methods from the contract and shows the result of both the main methods from the top area and the getters.
 		\item \emph{Bottom Right area}: Area with some live information about the auction, together with all the events generated from the smart contract.
 	\end{itemize}
+	\begin{figure}
+		\centering
+		\includegraphics[width=\linewidth]{UI}
+		\caption{UI snapshot from the Vickrey Auction}
+		\label{fig:UI}
+	\end{figure}
+	\item \emph{Dynamic loading}: The whole interaction with the smart contracts is done using one single web page, which uses dynamically \emph{jQuery} in order to change the web view according to the user choices.
 	\item \emph{Vickrey Auction bids}: The Vickrey auction interface provides the ability to bid and open a commitment. The interface does not provide an input field for the nonce and for the hash, but handles those transparently. In addition to that, the only input to be provided for making a bid is the bidding value, and it is provided directly in the bidding phase (in opposition with the contract, where the payment of that amount is delayed to the opening phase). The DAPP will handle the contract payment delay, together with the handling of the hashes and nonces transparently for the user.
+	\item \emph{App object}: The whole contract initialization and interaction is handled by a big js object called \emph{App}, for which the logic is in the \emph{App.js} file. The generals setup call chain (issued whenever the user chooses the auction type) is: 
+	$$ init \rightarrow initWeb3 \rightarrow InitX \rightarrow listenForEventsX \rightarrow renderX $$
+	Where X is either Dutch or Vickrey (their implementation resides in different functions since they have strongly different events/callbacks).
+	The getter callbacks are under \emph{App.getterX}, while the main methods callbacks are under \emph{App.callerX}.
+	\item \emph{Error Handling}: Web3, truffle-contract and MetaMask do not handle EVM reverts gracefully (revert operations are caused by both assertions and require clauses). This means that the string of the failing require is not a clear field of the error message. So in order to retrieve the actual error message thrown by the contract some ugly parsing had to be performed. This results in a functional but sketchy way of handling errors.\\ That being said, in the provided implementation of the Vickrey Auction for the final term, requires and assert were not used in order to force every operation to update the current phase on the blockchain (revert does not allow to write the blockchain status). The original solution was to use legal transaction (which did not fail) and appropriate return codes. But unfortunately web3 does not allow to obtain the return codes from a transaction, which means that this information is lost. \\Being committed to the choice of leaving the code with no require operations, the handling of errors in the Vickrey auction has been delegated to doing this:
+	\begin{enumerate}
+		\item call contract function.
+		\item call appropriate getter function in order to assert if the contract call was successful.
+		\item display the result.
+	\end{enumerate}
 \end{itemize}
 
 \section*{Local and Remote setup}
 	\paragraph*{Local Testing}
 	In order to test the application locally those actions are going to be needed
 	\begin{enumerate}
-		\item \emph{Run Ganache}: The default port varies. The one that has been set in the project configuration file is 7545. If this is not the case, then just change property \emph{port} of \emph{development} in the \emph{truffle-config.json} file.
-		\item \emph{Migrate}: Do \emph{truffle migrate --reset} in order to compile the project and deploy them on the Ropsten test net. The account that pays the deployment price is the first one in Ganache. This also generates the build folder. The parameters passed to the contract constructors are specified in the file \emph{1\_initial\_migration.js}. In order to change them, just edit this file.
+		\item \emph{Install all the needed modules}: Place a terminal in the DAPP folder and run \emph{npm install}. This will generate the \emph{node\_modules} folder and the \emph{package\_lock.json} file. Expect a wait time around 2 minutes. In case it was not installed earlier, install MetaMask web browser extension.
+		\item \emph{Run Ganache}: The default port varies. The one that has been set in the project configuration file is 7545. If this is not the case, then just change property \emph{port} under the \emph{development} network in the \emph{truffle-config.json} file.
+		\item \emph{Migrate}: Do \emph{truffle migrate -\,-reset} in order to compile the project and deploy them on the Ropsten test net. The account that pays the deployment price is the first one in Ganache. This also generates the build folder. The parameters passed to the contract constructors are specified in the file \emph{1\_initial\_migration.js}. In order to change them, just edit this file. This command will generate the build folder.
 		\item \emph{Run the server}: Just do \emph{npm run dev}. This starts the lite server.
 		\item \emph{Browser}: At this point, two things are going to be needed: \emph{MetaMask} and the \emph{web view}. Just open on the browser \emph{localhost:3000}. Now login with your MetaMask with an account and connect it to Ganache. Import the needed amount of accounts from Ganache through their private key and the setup should be complete.
 	\end{enumerate}
-	\paragraph*{Remote Testing}:
+	\paragraph*{Remote Testing}
 	In case of a deployment on the Ropsten test net, then the process is the following:
 	\begin{enumerate}
+		\item \emph{Install all the needed modules}: In case this step was not performed earlier (during local testing), place a terminal in the DAPP folder and run \emph{npm install}. This will generate the \emph{node\_modules} folder and the \emph{package\_lock.json} file. Expect a wait time around 2 minutes. In case it was not installed earlier, install MetaMask web browser extension.
 		\item \emph{Create Infura project}: Infura is used as a provided, so an Infura project is needed. After having created one, copy the Infura project ID.
 		\item \emph{Create ropsten.json file}: This file is needed from \emph{truffle-config.js} in order to export the project through infura provider. In figure \ref{fig:ropsten}, the file structure is shown. The \emph{infura\_key} is the previously copied filed, while the seed are shown in metamask by going under settings, security and privacy and then reveal seed phrase.
-		\item \emph{Migrate}: At this point, issue this command: \emph{truffle migrate --network ropsten}. Every contract migration has to be really mined so around one/two minute wait is to be expected.
+		\item \emph{Migrate}: At this point, issue this command: \emph{truffle migrate -\,-network ropsten}. Every contract migration has to be really mined so around one/two minute wait is to be expected.
 		\item \emph{Run web app}: Same as before, login with MetaMask and connect it to Ropsten. Get some fake ether on some accounts and then run \emph{npm run dev} in order to run the web page. Visit at this point \emph{localhost:3000} where the empty web view should appear.
 	\end{enumerate}
 	\begin{figure}
-		\caption{\emph{ropsten.json} file format}
-		\label{fig:ropsten}
 		\begin{lstlisting}[language=json,firstnumber=1]
 {"mnemonic": "twelve metamask words under settings/security_and_privacy/reveal_seed_phrase",
 "infura_key": "insert infura project ID here"}
 		\end{lstlisting}
+		\caption{\emph{ropsten.json} file format}
+		\label{fig:ropsten}
 	\end{figure}
+
+	Some notes regarding the experience related to the remote 
 	
 \section*{Testing}
 	This section explains some operations that can be done in order to test the application both when it is deployed locally and when it is deployed on the Ropsten Testnet. \\
 	The only valuable difference between the two cases is that in order to make the time pass on Ganache it is necessary to mine fake blocks, which get mined whenever a \emph{successful transaction} is performed. The easiest way to do it in both auction is to call the phase checker function, which has the only effect of updating the phase in the auction. \\
 	If the application was deployed on Ropsten, it is suggested to increase the durations of the various phases in the contract (by at least a 2x or 3x factor). In order to do so, just change the parameters in the file \emph{1\_initial\_migration.js} under the \emph{migrations} folder. \\
+	Another thing worth noting is the way in which it is possible to choose the role of the caller. Every time that an operation must be issued it is enough to select the issuer address in MetaMask. The front end uses the selected address in MetaMask every time that it issues an operation. So the cycle to make an operation is:
+	\begin{enumerate}
+		\item Select address in MetaMask.
+		\item (\emph{optional}) Provide input (if it is needed).
+		\item Click on the button and issue the operation.
+		\item MetaMask will prompt a transaction, accept it.
+		\item Check the result of your operation in the bottom left part of the UI.
+	\end{enumerate}
 	Having specified that, some example operations for the Vickrey Auction are listed:
 	\begin{enumerate}
 		\item \emph{Create Auction}: The owner of the auction (make sure that you have the owner selected as an account under MetaMask) has the ability to start the auction (which starts the grace time). 
-		\item \emph{Commitment Phase}: Place some bids, considering that the value that has to be passed as parameter is not paid straight away, but it is paid by the application whenever the open method is called (so during the opening phase). The application takes care of this process under the hood.
+		\item \emph{Commitment Phase}: Place some bids, considering that the value that has to be passed as parameter is not paid straight away, but it is paid by the application whenever the open method is called (so during the opening phase). The application takes care of this process under the hood. 
+		\item \emph{Withdrawal Phase}: Withdraw one bid during this phase (or more).
+		\item \emph{Opening Phase}: In this phase, open all the bids that were placed. A suggestion would be to open the winning bid not first, in order to see the emission of the event that notifies that a new leader of the auction emerged.
+		\item \emph{Auction End}: Whenever the opening phase is over (its end gets notified by an event), the auction is officially over. At this point the only thing to see is that the auction is finalized/destroyed correctly. Both these methods are only allowed to the owner of the auction.
 	\end{enumerate}
 
 \end{document}          
